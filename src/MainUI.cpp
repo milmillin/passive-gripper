@@ -52,8 +52,11 @@ void MainUI::draw_viewer_menu()
     }
     if (voxelized) {
       if (ImGui::CollapsingHeader("Result", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("# of Cubes %llu", voxel.nX * voxel.nY * voxel.nZ);
-        ImGui::Text("%llu x %llu x %llu", voxel.nX, voxel.nY, voxel.nZ);
+        ImGui::Text("# of Cubes %llu", (long long unsigned) voxel.nX * voxel.nY * voxel.nZ);
+        ImGui::Text("%llu x %llu x %llu",
+          (long long unsigned) voxel.nX,
+          (long long unsigned) voxel.nY,
+          (long long unsigned) voxel.nZ);
       }
     }
   }

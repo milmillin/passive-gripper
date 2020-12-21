@@ -19,6 +19,9 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer)
   viewer->data_list.emplace_back();
   viewer->data_list.back().id = LayerId::Voxelized;
   viewer->next_data_id = 2;
+
+  // Set default point size
+  viewer->data_list[LayerId::Voxelized].point_size = 3;
 }
 
 void MainUI::draw_viewer_menu()
@@ -61,8 +64,23 @@ void MainUI::draw_viewer_menu()
     }
   }
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::Checkbox("Mesh##View", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
-    ImGui::Checkbox("Voxelized##View", (bool*)&(viewer->data(LayerId::Voxelized).is_visible));
+    ImGui::PushID("View");
+
+    bool needRefresh = false;
+
+    ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
+    ImGui::Checkbox("Voxelized", (bool*)&(viewer->data(LayerId::Voxelized).is_visible));
+    needRefresh |= ImGui::Checkbox("Show voxel as points", &showPoints);
+    if (showPoints) {
+      ImGui::DragFloat("Point size", &(viewer->data_list[LayerId::Voxelized].point_size));
+    } else {
+      needRefresh |= ImGui::DragFloat("Voxel box size", &(voxelBoxSize));
+    }
+
+    if (needRefresh)
+      refreshVoxel();
+
+    ImGui::PopID();
   }
 }
 
@@ -75,18 +93,31 @@ bool MainUI::post_load()
 
 void MainUI::voxelize()
 {
-  voxel = Voxel::Voxelize(viewer->data(LayerId::Mesh).V, viewer->data(LayerId::Mesh).F,
+  voxel = Voxel::Voxelize(viewer->data(LayerId::Mesh).V,
+    viewer->data(LayerId::Mesh).F,
     num_division);
+  voxelized = true;
 
-  Eigen::MatrixXd V;
-  Eigen::MatrixXi F;
-  voxel.GenerateMesh(V, F);
+  refreshVoxel();
+}
 
+void MainUI::refreshVoxel() {
   igl::opengl::ViewerData& viewerData = viewer->data(LayerId::Voxelized);
   viewerData.clear();
-  viewerData.set_face_based(true);
-  viewerData.set_mesh(V, F);
-  voxelized = true;
+
+  if (showPoints) {
+    Eigen::MatrixXd P;
+    voxel.GeneratePoints(P);
+
+    viewerData.set_points(P, Eigen::Vector3d(1, 1, 1));
+  } else {
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    voxel.GenerateMesh(V, F, voxelBoxSize);
+
+    viewerData.set_face_based(true);
+    viewerData.set_mesh(V, F);
+  }
 }
 
-}
+}  // namespace gripper

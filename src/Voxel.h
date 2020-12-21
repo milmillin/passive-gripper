@@ -15,7 +15,8 @@ public:
   bool operator()(size_t x, size_t y, size_t z) const;
   bool& operator()(size_t x, size_t y, size_t z);
 
-  void GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const;
+  void GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize) const;
+  void GeneratePoints(Eigen::MatrixXd& P) const;
 
   size_t nX;
   size_t nY;

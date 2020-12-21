@@ -66,7 +66,7 @@ bool& Voxel::operator()(size_t x, size_t y, size_t z)
   return m_data(getVoxelIndex(x, y, z));
 }
 
-void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
+void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize) const
 {
   // Inline mesh of a cube
   static const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
@@ -98,10 +98,31 @@ void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
   V.resize(8 * numSolid, 3);
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
-    V.block<8, 3>(8 * i, 0) = cube_V * CubeSize +
+    V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
       (Origin + getVoxelCoord<Eigen::Vector3d>(solid[i]) * CubeSize).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }
 
+void Voxel::GeneratePoints(Eigen::MatrixXd& P) const {
+  auto voxels = getAllVoxelIndex();
+
+  P.resize(voxels.size(), 3);
+
+  for (size_t i = 0; i < voxels.size(); i++) {
+    P.row(i) = Origin + CubeSize *
+      (Eigen::Vector3d(getVoxelCoord<Eigen::Vector3d>(voxels[i]))
+       + Eigen::Vector3d(0.5, 0.5, 0.5));
+  }
 }
+
+std::vector<size_t> Voxel::getAllVoxelIndex() const {
+  std::vector<size_t> voxelIndices;
+  for (size_t i = 0; i < m_nXYZ; i++)
+    if (m_data(i))
+      voxelIndices.push_back(i);
+
+  return voxelIndices;
+}
+
+}  // namespace gripper

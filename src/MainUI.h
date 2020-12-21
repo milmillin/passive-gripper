@@ -23,6 +23,7 @@ public:
 
 private:
   void voxelize();
+  void refreshVoxel();
 
   bool meshLoaded;
   MeshInfo meshInfo;
@@ -30,6 +31,9 @@ private:
   bool voxelized;
   Voxel voxel;
   int num_division;
+
+  float voxelBoxSize = 0.5;
+  bool showPoints = false;
 };
 
 }

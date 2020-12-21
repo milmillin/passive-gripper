@@ -58,12 +58,12 @@ Voxel::Voxel(size_t nX, size_t nY, size_t nZ) :
 
 bool Voxel::operator()(size_t x, size_t y, size_t z) const
 {
-  return m_data(x * m_nYZ + y * nZ + z);
+  return m_data(getVoxelIndex(x, y, z));
 }
 
 bool& Voxel::operator()(size_t x, size_t y, size_t z)
 {
-  return m_data(x * m_nYZ + y * nZ + z);
+  return m_data(getVoxelIndex(x, y, z));
 }
 
 void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
@@ -92,21 +92,14 @@ void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const
     2, 6, 8,
     2, 8, 4).finished().array() - 1;
 
-  std::vector<size_t> solid;
-  for (size_t i = 0; i < m_nXYZ; i++) {
-    if (m_data(i)) solid.push_back(i);
-  }
+  auto solid = getAllVoxelIndex();
   size_t numSolid = solid.size();
 
   V.resize(8 * numSolid, 3);
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
-    size_t index = solid[i];
-    size_t x = index / m_nYZ;
-    size_t y = (index / nZ) % nY;
-    size_t z = index % nZ;
     V.block<8, 3>(8 * i, 0) = cube_V * CubeSize +
-      (Origin + Eigen::Vector3d(x, y, z) * CubeSize).transpose().replicate<8, 1>();
+      (Origin + getVoxelCoord<Eigen::Vector3d>(solid[i]) * CubeSize).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }

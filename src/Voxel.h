@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Eigen/Core>
 
 namespace gripper {
@@ -24,6 +26,23 @@ private:
   Eigen::Matrix<bool, -1, 1> m_data;
   size_t m_nYZ;
   size_t m_nXYZ;
+
+  std::vector<size_t> getAllVoxelIndex() const;
+
+  inline size_t getVoxelIndex(size_t x, size_t y, size_t z) const {
+    return x * m_nYZ + y * nZ + z;
+  }
+
+  inline void getVoxelCoord(size_t index, size_t &x, size_t &y, size_t &z) const {
+    x = index / m_nYZ;
+    y = (index / nZ) % nY;
+    z = index % nZ;
+  }
+
+  template<class VectorClass>
+  inline VectorClass getVoxelCoord(size_t index) const {
+    return VectorClass(index / m_nYZ, (index / nZ) % nY, index % nZ);
+  }
 };
 
 }

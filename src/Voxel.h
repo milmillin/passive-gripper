@@ -8,6 +8,8 @@ namespace gripper {
 
 class Voxel {
 public:
+  typedef std::vector<size_t> VoxelList;
+
   static Voxel Voxelize(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int num_division);
 
   Voxel(size_t nX, size_t nY, size_t nZ);
@@ -15,8 +17,15 @@ public:
   bool operator()(size_t x, size_t y, size_t z) const;
   bool& operator()(size_t x, size_t y, size_t z);
 
-  void GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize) const;
+  void GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
+    VoxelList voxels) const;
   void GeneratePoints(Eigen::MatrixXd& P) const;
+
+  VoxelList GetAllVoxelIndex() const;
+  VoxelList GetValidSupportPoints(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Eigen::Vector3d grabDirection) const;
 
   size_t nX;
   size_t nY;
@@ -28,7 +37,6 @@ private:
   size_t m_nYZ;
   size_t m_nXYZ;
 
-  std::vector<size_t> GetAllVoxelIndex() const;
 
   inline size_t GetVoxelIndex(size_t x, size_t y, size_t z) const {
     return x * m_nYZ + y * nZ + z;

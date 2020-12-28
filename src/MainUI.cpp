@@ -113,7 +113,7 @@ void MainUI::refreshVoxel() {
   } else {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    voxel.GenerateMesh(V, F, voxelBoxSize);
+    voxel.GenerateMesh(V, F, voxelBoxSize, voxel.GetAllVoxelIndex());
 
     viewerData.set_face_based(true);
     viewerData.set_mesh(V, F);

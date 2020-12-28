@@ -23,7 +23,7 @@ Voxel Voxel::Voxelize(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int nu
   size_t nY = std::ceil(meshInfo.Size.y() / cubeSize);
   size_t nZ = std::ceil(meshInfo.Size.z() / cubeSize);
 
-  
+
   Voxel voxel(nX, nY, nZ);
   voxel.CubeSize = cubeSize;
   voxel.Origin = meshInfo.Minimum;
@@ -52,7 +52,7 @@ Voxel::Voxel(size_t nX, size_t nY, size_t nZ) :
   Origin(0, 0, 0),
   m_nYZ(nY * nZ),
   m_nXYZ(nX * nY * nZ)
-{ 
+{
   m_data.resize(m_nXYZ);
 }
 
@@ -66,8 +66,29 @@ bool& Voxel::operator()(size_t x, size_t y, size_t z)
   return m_data(GetVoxelIndex(x, y, z));
 }
 
-void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize) const
-{
+Voxel::VoxelList Voxel::GetValidSupportPoints(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    Eigen::Vector3d grabDirection) const {
+  igl::embree::EmbreeIntersector intersector;
+  intersector.init(V.cast<float>(), F, true);
+  std::vector<size_t> result;
+
+  #pragma omp parallel for
+  for (int i = 0; i < (int)nX; i++) {
+    for (size_t j = 0; j < nY; j++) {
+      for (size_t k = 0; k < nZ; k++) {
+        if (j + 1 < nY && !(*this)(i, j, k) && (*this)(i, j + 1, k)) {
+          result.push_back(GetVoxelIndex(i, j, k));
+        }
+      }
+    }
+  }
+  return result;
+}
+
+void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
+    VoxelList voxels) const {
   // Inline mesh of a cube
   static const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
     0.0, 0.0, 0.0,
@@ -92,14 +113,13 @@ void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize) 
     2, 6, 8,
     2, 8, 4).finished().array() - 1;
 
-  auto solid = GetAllVoxelIndex();
-  size_t numSolid = solid.size();
+  size_t numSolid = voxels.size();
 
   V.resize(8 * numSolid, 3);
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
     V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
-      (Origin + GetVoxelCoord<Eigen::Vector3d>(solid[i]) * CubeSize).transpose().replicate<8, 1>();
+      (Origin + GetVoxelCoord<Eigen::Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }

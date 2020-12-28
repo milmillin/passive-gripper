@@ -6,32 +6,38 @@
 
 namespace gripper {
 
+using std::vector;
+using Eigen::MatrixXd;
+using Eigen::MatrixXi;
+using Eigen::Vector3d;
+using Eigen::RowVector3f;
+
 class Voxel {
 public:
-  typedef std::vector<size_t> VoxelList;
+  typedef vector<size_t> VoxelList;
 
-  static Voxel Voxelize(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int num_division);
+  static Voxel Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division);
 
   Voxel(size_t nX, size_t nY, size_t nZ);
 
   bool operator()(size_t x, size_t y, size_t z) const;
   bool& operator()(size_t x, size_t y, size_t z);
 
-  void GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
+  void GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
     VoxelList voxels) const;
-  void GeneratePoints(Eigen::MatrixXd& P) const;
+  void GeneratePoints(MatrixXd& P) const;
 
   VoxelList GetAllVoxelIndex() const;
   VoxelList GetSupportPointCandidates(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    Eigen::Vector3d grabDirection) const;
+    const MatrixXd& V,
+    const MatrixXi& F,
+    Vector3d grabDirection) const;
 
   size_t nX;
   size_t nY;
   size_t nZ;
   double CubeSize;
-  Eigen::Vector3d Origin;
+  Vector3d Origin;
 private:
   Eigen::Matrix<bool, -1, 1> m_data;
   size_t m_nYZ;

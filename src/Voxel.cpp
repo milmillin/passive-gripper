@@ -8,15 +8,15 @@
 
 namespace gripper {
 
-Voxel Voxel::Voxelize(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int num_division)
+Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
 {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(V.cast<float>(), F, true);
 
   MeshInfo meshInfo(V, F);
   double cubeSize = (meshInfo.Size / num_division).minCoeff();
-  Eigen::RowVector3f offset = Eigen::RowVector3f::Constant(cubeSize / 2);
-  Eigen::RowVector3f direction(0, 0, 1);
+  RowVector3f offset = RowVector3f::Constant(cubeSize / 2);
+  RowVector3f direction(0, 0, 1);
   double tFar = meshInfo.Size.maxCoeff();
 
   size_t nX = std::ceil(meshInfo.Size.x() / cubeSize);
@@ -27,14 +27,14 @@ Voxel Voxel::Voxelize(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int nu
   Voxel voxel(nX, nY, nZ);
   voxel.CubeSize = cubeSize;
   voxel.Origin = meshInfo.Minimum;
-  Eigen::RowVector3f origin = meshInfo.Minimum.cast<float>().transpose() + offset;
+  RowVector3f origin = meshInfo.Minimum.cast<float>().transpose() + offset;
 
 #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
     for (size_t j = 0; j < nY; j++) {
       for (size_t k = 0; k < nZ; k++) {
-        std::vector<igl::Hit> hits;
-        Eigen::RowVector3f position = origin + Eigen::RowVector3f(i, j, k) * cubeSize;
+        vector<igl::Hit> hits;
+        RowVector3f position = origin + RowVector3f(i, j, k) * cubeSize;
         int num_rays = 0;
         intersector.intersectRay(position, direction, hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
         voxel(i, j, k) = hits.size() % 2 == 1;
@@ -67,12 +67,12 @@ bool& Voxel::operator()(size_t x, size_t y, size_t z)
 }
 
 Voxel::VoxelList Voxel::GetSupportPointCandidates(
-    const Eigen::MatrixXd& V,
-    const Eigen::MatrixXi& F,
-    Eigen::Vector3d grabDirection) const {
+    const MatrixXd& V,
+    const MatrixXi& F,
+    Vector3d grabDirection) const {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(V.cast<float>(), F, true);
-  std::vector<size_t> result;
+  VoxelList result;
 
   #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
@@ -87,10 +87,10 @@ Voxel::VoxelList Voxel::GetSupportPointCandidates(
   return result;
 }
 
-void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
+void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
     VoxelList voxels) const {
   // Inline mesh of a cube
-  static const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
+  static const MatrixXd cube_V = (MatrixXd(8, 3) <<
     0.0, 0.0, 0.0,
     0.0, 0.0, 1.0,
     0.0, 1.0, 0.0,
@@ -99,7 +99,7 @@ void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
     1.0, 0.0, 1.0,
     1.0, 1.0, 0.0,
     1.0, 1.0, 1.0).finished();
-  static const Eigen::MatrixXi cube_F = (Eigen::MatrixXi(12, 3) <<
+  static const MatrixXi cube_F = (MatrixXi(12, 3) <<
     1, 7, 5,
     1, 3, 7,
     1, 4, 3,
@@ -119,25 +119,25 @@ void Voxel::GenerateMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, float boxSize,
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
     V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
-      (Origin + GetVoxelCoord<Eigen::Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
+      (Origin + GetVoxelCoord<Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }
 
-void Voxel::GeneratePoints(Eigen::MatrixXd& P) const {
+void Voxel::GeneratePoints(MatrixXd& P) const {
   auto voxels = GetAllVoxelIndex();
 
   P.resize(voxels.size(), 3);
 
   for (size_t i = 0; i < voxels.size(); i++) {
     P.row(i) = Origin + CubeSize *
-      (Eigen::Vector3d(GetVoxelCoord<Eigen::Vector3d>(voxels[i]))
-       + Eigen::Vector3d(0.5, 0.5, 0.5));
+      (Vector3d(GetVoxelCoord<Vector3d>(voxels[i]))
+       + Vector3d(0.5, 0.5, 0.5));
   }
 }
 
-std::vector<size_t> Voxel::GetAllVoxelIndex() const {
-  std::vector<size_t> voxelIndices;
+Voxel::VoxelList Voxel::GetAllVoxelIndex() const {
+  VoxelList voxelIndices;
   for (size_t i = 0; i < m_nXYZ; i++)
     if (m_data(i))
       voxelIndices.push_back(i);

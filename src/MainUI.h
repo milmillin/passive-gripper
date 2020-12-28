@@ -25,6 +25,9 @@ private:
   void voxelize();
   void refreshVoxel();
 
+  inline Eigen::MatrixXd &getMeshVertices() { return viewer->data(LayerId::Mesh).V; }
+  inline Eigen::MatrixXi &getMeshFaces() { return viewer->data(LayerId::Mesh).F; }
+
   bool meshLoaded;
   MeshInfo meshInfo;
 
@@ -34,6 +37,8 @@ private:
 
   float voxelBoxSize = 0.5;
   bool showPoints = false;
+  bool showSupportPointCandidates = false;
+  Eigen::Vector3f gripDirection = Eigen::Vector3f(-1, 0, 0);
 };
 
 }

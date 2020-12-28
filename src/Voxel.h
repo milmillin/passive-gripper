@@ -22,7 +22,7 @@ public:
   void GeneratePoints(Eigen::MatrixXd& P) const;
 
   VoxelList GetAllVoxelIndex() const;
-  VoxelList GetValidSupportPoints(
+  VoxelList GetSupportPointCandidates(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     Eigen::Vector3d grabDirection) const;

@@ -66,7 +66,7 @@ bool& Voxel::operator()(size_t x, size_t y, size_t z)
   return m_data(GetVoxelIndex(x, y, z));
 }
 
-Voxel::VoxelList Voxel::GetValidSupportPoints(
+Voxel::VoxelList Voxel::GetSupportPointCandidates(
     const Eigen::MatrixXd& V,
     const Eigen::MatrixXi& F,
     Eigen::Vector3d grabDirection) const {

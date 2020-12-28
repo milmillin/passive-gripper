@@ -49,6 +49,7 @@ void MainUI::draw_viewer_menu()
       ImGui::Text("Size: (%.2lf, %.2lf, %.2lf)",
         meshInfo.Size.x(), meshInfo.Size.y(), meshInfo.Size.z());
       ImGui::InputInt("# of Division", &num_division, 1, 10);
+      ImGui::DragFloat3("Grip Direction", gripDirection.data());
       if (ImGui::Button("Voxelize")) {
         voxelize();
       }
@@ -71,6 +72,7 @@ void MainUI::draw_viewer_menu()
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
     ImGui::Checkbox("Voxelized", (bool*)&(viewer->data(LayerId::Voxelized).is_visible));
     needRefresh |= ImGui::Checkbox("Show voxel as points", &showPoints);
+    needRefresh |= ImGui::Checkbox("Show support point candidates", &showSupportPointCandidates);
     if (showPoints) {
       ImGui::DragFloat("Point size", &(viewer->data_list[LayerId::Voxelized].point_size));
     } else {
@@ -87,15 +89,13 @@ void MainUI::draw_viewer_menu()
 bool MainUI::post_load()
 {
   meshLoaded = true;
-  meshInfo = MeshInfo(viewer->data(LayerId::Mesh).V, viewer->data(LayerId::Mesh).F);
+  meshInfo = MeshInfo(getMeshVertices(), getMeshFaces());
   return true;
 }
 
 void MainUI::voxelize()
 {
-  voxel = Voxel::Voxelize(viewer->data(LayerId::Mesh).V,
-    viewer->data(LayerId::Mesh).F,
-    num_division);
+  voxel = Voxel::Voxelize(getMeshVertices(), getMeshFaces(), num_division);
   voxelized = true;
 
   refreshVoxel();
@@ -113,7 +113,13 @@ void MainUI::refreshVoxel() {
   } else {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    voxel.GenerateMesh(V, F, voxelBoxSize, voxel.GetAllVoxelIndex());
+    Voxel::VoxelList voxels = showSupportPointCandidates ?
+      // if (showSupportPointCandidates)
+      voxel.GetSupportPointCandidates(getMeshVertices(), getMeshFaces(),
+        gripDirection.cast<double>())
+      // else
+      : voxel.GetAllVoxelIndex();
+    voxel.GenerateMesh(V, F, voxelBoxSize, voxels);
 
     viewerData.set_face_based(true);
     viewerData.set_mesh(V, F);

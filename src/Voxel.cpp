@@ -73,20 +73,20 @@ bool& Voxel::operator()(size_t x, size_t y, size_t z)
   return m_data(GetVoxelIndex(x, y, z));
 }
 
-Voxel::VoxelList Voxel::GetSupportPointCandidates(
+Voxel::VoxelCoordList Voxel::GetSupportPointCandidates(
     const MatrixXd& V,
     const MatrixXi& F,
     Vector3d grabDirection) const {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(V.cast<float>(), F, true);
-  VoxelList result;
+  VoxelCoordList result;
 
   #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
     for (size_t j = 0; j < nY; j++) {
       for (size_t k = 0; k < nZ; k++) {
-        if (j + 1 < nY && !(*this)(i, j, k) && (*this)(i, j + 1, k)) {
-          result.push_back(GetVoxelIndex(i, j, k));
+        if (!(*this)(i, j, k) && (*this)(i, j + 1, k)) {
+          result.push_back(VoxelCoord{i, j, k});
         }
       }
     }
@@ -95,7 +95,7 @@ Voxel::VoxelList Voxel::GetSupportPointCandidates(
 }
 
 void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
-    VoxelList voxels) const {
+    VoxelCoordList voxels) const {
   // Inline mesh of a cube
   static const MatrixXd cube_V = (MatrixXd(8, 3) <<
     0.0, 0.0, 0.0,
@@ -126,7 +126,7 @@ void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
     V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
-      (Origin + GetVoxelCoord<Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
+      (Origin + GetVoxelCoordVector<Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }
@@ -138,16 +138,16 @@ void Voxel::GeneratePoints(MatrixXd& P) const {
 
   for (size_t i = 0; i < voxels.size(); i++) {
     P.row(i) = Origin + CubeSize *
-      (Vector3d(GetVoxelCoord<Vector3d>(voxels[i]))
+      (Vector3d(GetVoxelCoordVector<Vector3d>(voxels[i]))
        + Vector3d(0.5, 0.5, 0.5));
   }
 }
 
-Voxel::VoxelList Voxel::GetAllVoxelIndex() const {
-  VoxelList voxelIndices;
+Voxel::VoxelCoordList Voxel::GetAllVoxelIndex() const {
+  VoxelCoordList voxelIndices;
   for (size_t i = 0; i < m_nXYZ; i++)
     if (m_data(i))
-      voxelIndices.push_back(i);
+      voxelIndices.push_back(GetVoxelCoord(i));
 
   return voxelIndices;
 }

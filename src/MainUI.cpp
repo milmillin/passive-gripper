@@ -113,7 +113,7 @@ void MainUI::refreshVoxel() {
   } else {
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    Voxel::VoxelList voxels = showSupportPointCandidates ?
+    Voxel::VoxelCoordList voxels = showSupportPointCandidates ?
       // if (showSupportPointCandidates)
       voxel.GetSupportPointCandidates(getMeshVertices(), getMeshFaces(),
         gripDirection.cast<double>())

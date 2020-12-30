@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "MeshInfo.h"
+#include "Utils.h"
 
 namespace gripper {
 
@@ -58,11 +59,17 @@ Voxel::Voxel(size_t nX, size_t nY, size_t nZ) :
 
 bool Voxel::operator()(size_t x, size_t y, size_t z) const
 {
+  // Warning: didn't check negative number because the number is unsigned
+  if (x >= nX || y >= nY || z >= nZ)
+    return false;
   return m_data(GetVoxelIndex(x, y, z));
 }
 
 bool& Voxel::operator()(size_t x, size_t y, size_t z)
 {
+  // Warning: didn't check negative number because the number is unsigned
+  if (x >= nX || y >= nY || z >= nZ)
+    throw std::runtime_error(ERROR_MESSAGE("Voxel index out of bound"));
   return m_data(GetVoxelIndex(x, y, z));
 }
 

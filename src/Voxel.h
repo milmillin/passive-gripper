@@ -25,10 +25,10 @@ public:
 
   static Voxel Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division);
 
-  Voxel(size_t nX, size_t nY, size_t nZ);
+  Voxel(ssize_t nX, ssize_t nY, ssize_t nZ);
 
-  bool operator()(size_t x, size_t y, size_t z) const;
-  bool& operator()(size_t x, size_t y, size_t z);
+  bool operator()(ssize_t x, ssize_t y, ssize_t z) const;
+  bool& operator()(ssize_t x, ssize_t y, ssize_t z);
 
   void GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
     VoxelCoordList voxels) const;
@@ -40,15 +40,15 @@ public:
     const MatrixXi& F,
     Vector3d grabDirection) const;
 
-  size_t nX;
-  size_t nY;
-  size_t nZ;
+  ssize_t nX;
+  ssize_t nY;
+  ssize_t nZ;
   double CubeSize;
   Vector3d Origin;
 private:
   Eigen::Matrix<bool, -1, 1> m_data;
-  size_t m_nYZ;
-  size_t m_nXYZ;
+  ssize_t m_nYZ;
+  ssize_t m_nXYZ;
 
 
   inline ssize_t GetVoxelIndex(ssize_t x, ssize_t y, ssize_t z) const {

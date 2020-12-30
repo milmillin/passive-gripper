@@ -20,9 +20,9 @@ Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
   RowVector3f direction(0, 0, 1);
   double tFar = meshInfo.Size.maxCoeff();
 
-  size_t nX = std::ceil(meshInfo.Size.x() / cubeSize);
-  size_t nY = std::ceil(meshInfo.Size.y() / cubeSize);
-  size_t nZ = std::ceil(meshInfo.Size.z() / cubeSize);
+  ssize_t nX = std::ceil(meshInfo.Size.x() / cubeSize);
+  ssize_t nY = std::ceil(meshInfo.Size.y() / cubeSize);
+  ssize_t nZ = std::ceil(meshInfo.Size.z() / cubeSize);
 
 
   Voxel voxel(nX, nY, nZ);
@@ -32,8 +32,8 @@ Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
 
 #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
-    for (size_t j = 0; j < nY; j++) {
-      for (size_t k = 0; k < nZ; k++) {
+    for (ssize_t j = 0; j < nY; j++) {
+      for (ssize_t k = 0; k < nZ; k++) {
         vector<igl::Hit> hits;
         RowVector3f position = origin + RowVector3f(i, j, k) * cubeSize;
         int num_rays = 0;
@@ -45,7 +45,7 @@ Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
   return voxel;
 }
 
-Voxel::Voxel(size_t nX, size_t nY, size_t nZ) :
+Voxel::Voxel(ssize_t nX, ssize_t nY, ssize_t nZ) :
   nX(nX),
   nY(nY),
   nZ(nZ),
@@ -57,18 +57,16 @@ Voxel::Voxel(size_t nX, size_t nY, size_t nZ) :
   m_data.resize(m_nXYZ);
 }
 
-bool Voxel::operator()(size_t x, size_t y, size_t z) const
+bool Voxel::operator()(ssize_t x, ssize_t y, ssize_t z) const
 {
-  // Warning: didn't check negative number because the number is unsigned
-  if (x >= nX || y >= nY || z >= nZ)
+  if (x < 0 || y < 0 || z < 0 || x >= nX || y >= nY || z >= nZ)
     return false;
   return m_data(GetVoxelIndex(x, y, z));
 }
 
-bool& Voxel::operator()(size_t x, size_t y, size_t z)
+bool& Voxel::operator()(ssize_t x, ssize_t y, ssize_t z)
 {
-  // Warning: didn't check negative number because the number is unsigned
-  if (x >= nX || y >= nY || z >= nZ)
+  if (x < 0 || y < 0 || z < 0 || x >= nX || y >= nY || z >= nZ)
     throw std::runtime_error(ERROR_MESSAGE("Voxel index out of bound"));
   return m_data(GetVoxelIndex(x, y, z));
 }
@@ -83,8 +81,8 @@ Voxel::VoxelCoordList Voxel::GetSupportPointCandidates(
 
   #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
-    for (size_t j = 0; j < nY; j++) {
-      for (size_t k = 0; k < nZ; k++) {
+    for (ssize_t j = -1; j < nY; j++) {
+      for (ssize_t k = 0; k < nZ; k++) {
         if (!(*this)(i, j, k) && (*this)(i, j + 1, k)) {
           result.push_back(VoxelCoord{i, j, k});
         }
@@ -145,7 +143,7 @@ void Voxel::GeneratePoints(MatrixXd& P) const {
 
 Voxel::VoxelCoordList Voxel::GetAllVoxelIndex() const {
   VoxelCoordList voxelIndices;
-  for (size_t i = 0; i < m_nXYZ; i++)
+  for (ssize_t i = 0; i < m_nXYZ; i++)
     if (m_data(i))
       voxelIndices.push_back(GetVoxelCoord(i));
 

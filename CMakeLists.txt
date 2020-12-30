@@ -13,13 +13,22 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 # Add your project files
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
-# Enable OpenMP
 if (MSVC)
-  # For Microsoft compilers
+  # For Microsoft compiler
+  # Enable OpenMP
+  # Enable Warning
   set_source_files_properties(
     ${SRCFILES}
     PROPERTIES
-    COMPILE_FLAGS "/openmp:experimental"
+    COMPILE_FLAGS "/W4 /openmp:experimental"
+  )
+else()
+  # For other compilers
+  # Enable Warning
+  set_source_files_properties(
+    ${SRCFILES}
+    PROPERTIES
+    COMPILE_FLAGS "-Wall -Wextra -pedantic"
   )
 endif()
 

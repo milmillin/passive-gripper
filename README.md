@@ -33,3 +33,7 @@ cmake ..
 cmake --build .
 
 ```
+
+The following warning is fine if OpenMP is not supported by your compiler:
+
+    warning: ignoring ‘#pragma omp parallel’ [-Wunknown-pragmas]

@@ -38,7 +38,7 @@ if (NOT MSVC)
     list(APPEND LINK_LIBS stdc++fs)
 endif()
 
-# libigl
+# Link libigl
 option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
 option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
 option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use IMGUI"          ON)
@@ -46,8 +46,9 @@ option(LIBIGL_WITH_EMBREE            "Use Embree"         ON)
 
 find_package(LIBIGL REQUIRED QUIET)
 
+# Link Embree
 find_package(embree 3 CONFIG REQUIRED)
 
-
+# Linking
 add_executable(${PROJECT_NAME} ${SRCFILES})
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})

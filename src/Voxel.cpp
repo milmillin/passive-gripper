@@ -35,7 +35,7 @@ Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
     for (ssize_t j = 0; j < nY; j++) {
       for (ssize_t k = 0; k < nZ; k++) {
         vector<igl::Hit> hits;
-        RowVector3f position = origin + RowVector3f(i, j, k) * cubeSize;
+        RowVector3f position = voxel.GetVoxelCenter(i, j, k).cast<float>().transpose();
         int num_rays = 0;
         intersector.intersectRay(position, direction, hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
         voxel(i, j, k) = hits.size() % 2 == 1;
@@ -71,12 +71,7 @@ bool& Voxel::operator()(ssize_t x, ssize_t y, ssize_t z)
   return m_data(GetVoxelIndex(x, y, z));
 }
 
-Voxel::VoxelCoordList Voxel::GetSupportPointCandidates(
-    const MatrixXd& V,
-    const MatrixXi& F,
-    Vector3d grabDirection) const {
-  igl::embree::EmbreeIntersector intersector;
-  intersector.init(V.cast<float>(), F, true);
+Voxel::VoxelCoordList Voxel::GetSupportPointCandidates() const {
   VoxelCoordList result;
 
   #pragma omp parallel for
@@ -92,8 +87,31 @@ Voxel::VoxelCoordList Voxel::GetSupportPointCandidates(
   return result;
 }
 
+Voxel::VoxelCoordList Voxel::FilterByGrabDirection(
+    const VoxelCoordList &voxels,
+    const MatrixXd& V,
+    const MatrixXi& F,
+    Vector3d grabDirection) const {
+  igl::embree::EmbreeIntersector intersector;
+  intersector.init(V.cast<float>(), F, true);
+
+  VoxelCoordList result;
+  for (auto &voxel : voxels) {
+      int num_rays = 0;
+      RowVector3f position = GetVoxelCenter(voxel).cast<float>().transpose();
+      vector<igl::Hit> hits;
+      intersector.intersectRay(position, -grabDirection.cast<float>().transpose(),
+        hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
+      if (hits.size() == 0) {
+        result.push_back(voxel);
+      }
+  }
+  return result;
+}
+
+
 void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
-    VoxelCoordList voxels) const {
+    const VoxelCoordList &voxels) const {
   // Inline mesh of a cube
   static const MatrixXd cube_V = (MatrixXd(8, 3) <<
     0.0, 0.0, 0.0,
@@ -124,7 +142,7 @@ void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
     V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
-      (Origin + GetVoxelCoordVector<Vector3d>(voxels[i]) * CubeSize).transpose().replicate<8, 1>();
+      GetVoxelCenter(voxels[i]).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }

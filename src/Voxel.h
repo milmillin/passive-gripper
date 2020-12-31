@@ -31,11 +31,13 @@ public:
   bool& operator()(ssize_t x, ssize_t y, ssize_t z);
 
   void GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
-    VoxelCoordList voxels) const;
+    const VoxelCoordList &voxels) const;
   void GeneratePoints(MatrixXd& P) const;
 
   VoxelCoordList GetAllVoxelIndex() const;
-  VoxelCoordList GetSupportPointCandidates(
+  VoxelCoordList GetSupportPointCandidates() const;
+  VoxelCoordList FilterByGrabDirection(
+    const VoxelCoordList &voxels,
     const MatrixXd& V,
     const MatrixXi& F,
     Vector3d grabDirection) const;
@@ -78,6 +80,14 @@ private:
   template<class VectorClass>
   inline VectorClass GetVoxelCoordVector(VoxelCoord coord) const {
     return VectorClass(coord.x, coord.y, coord.z);
+  }
+
+  inline Vector3d GetVoxelCenter(int x, int y, int z) const {
+    return Origin + Eigen::Vector3d(x, y, z) * CubeSize;
+  }
+
+  inline Vector3d GetVoxelCenter(const VoxelCoord &coord) const {
+    return Origin + Eigen::Vector3d(coord.x, coord.y, coord.z) * CubeSize;
   }
 };
 

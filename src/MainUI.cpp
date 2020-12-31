@@ -79,6 +79,9 @@ void MainUI::draw_viewer_menu()
       needRefresh |= ImGui::DragFloat("Voxel box size", &(voxelBoxSize));
     }
 
+    needRefresh |= ImGui::DragFloat3("Grip direction", gripDirection.data());
+    needRefresh |= ImGui::Checkbox("Filter by grip direction", &filterByGripDirection);
+
     if (needRefresh)
       refreshVoxel();
 
@@ -111,14 +114,21 @@ void MainUI::refreshVoxel() {
 
     viewerData.set_points(P, Eigen::Vector3d(1, 1, 1));
   } else {
+    Voxel::VoxelCoordList voxels;
+    if (showSupportPointCandidates) {
+      voxels = voxel.GetSupportPointCandidates();
+
+      if (filterByGripDirection) {
+        voxels = voxel.FilterByGrabDirection(voxels,
+          getMeshVertices(), getMeshFaces(),
+          gripDirection.cast<double>());
+      }
+    } else { // !showSupportPointCandidates
+      voxels = voxel.GetAllVoxelIndex();
+    }
+
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    Voxel::VoxelCoordList voxels = showSupportPointCandidates ?
-      // if (showSupportPointCandidates)
-      voxel.GetSupportPointCandidates(getMeshVertices(), getMeshFaces(),
-        gripDirection.cast<double>())
-      // else
-      : voxel.GetAllVoxelIndex();
     voxel.GenerateMesh(V, F, voxelBoxSize, voxels);
 
     viewerData.set_face_based(true);

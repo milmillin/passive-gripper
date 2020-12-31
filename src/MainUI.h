@@ -38,6 +38,7 @@ private:
   float voxelBoxSize = 0.5;
   bool showPoints = false;
   bool showSupportPointCandidates = false;
+  bool filterByGripDirection = false;
   Eigen::Vector3f gripDirection = Eigen::Vector3f(-1, 0, 0);
 };
 

@@ -35,7 +35,7 @@ private:
   Voxel voxel;
   int num_division;
 
-  float voxelBoxSize = 0.5;
+  float voxelBoxSizeScale = 0.5;
   bool showPoints = false;
   bool showSupportPointCandidates = false;
   bool filterByGripDirection = false;

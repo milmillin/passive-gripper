@@ -30,7 +30,7 @@ public:
   bool operator()(ssize_t x, ssize_t y, ssize_t z) const;
   bool& operator()(ssize_t x, ssize_t y, ssize_t z);
 
-  void GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
+  void GenerateMesh(MatrixXd& V, MatrixXi& F, float voxelBoxSizeScale,
     const VoxelCoordList &voxels) const;
   void GeneratePoints(MatrixXd& P) const;
 

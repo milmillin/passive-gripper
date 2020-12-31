@@ -76,7 +76,7 @@ void MainUI::draw_viewer_menu()
     if (showPoints) {
       ImGui::DragFloat("Point size", &(viewer->data_list[LayerId::Voxelized].point_size));
     } else {
-      needRefresh |= ImGui::DragFloat("Voxel box size", &(voxelBoxSize));
+      needRefresh |= ImGui::DragFloat("Voxel box size scale", &(voxelBoxSizeScale));
     }
 
     needRefresh |= ImGui::DragFloat3("Grip direction", gripDirection.data());
@@ -129,7 +129,7 @@ void MainUI::refreshVoxel() {
 
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
-    voxel.GenerateMesh(V, F, voxelBoxSize, voxels);
+    voxel.GenerateMesh(V, F, voxelBoxSizeScale, voxels);
 
     viewerData.set_face_based(true);
     viewerData.set_mesh(V, F);

@@ -110,7 +110,7 @@ Voxel::VoxelCoordList Voxel::FilterByGrabDirection(
 }
 
 
-void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
+void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float voxelBoxSizeScale,
     const VoxelCoordList &voxels) const {
   // Inline mesh of a cube
   static const MatrixXd cube_V = (MatrixXd(8, 3) <<
@@ -141,7 +141,7 @@ void Voxel::GenerateMesh(MatrixXd& V, MatrixXi& F, float boxSize,
   V.resize(8 * numSolid, 3);
   F.resize(12 * numSolid, 3);
   for (size_t i = 0; i < numSolid; i++) {
-    V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * boxSize) +
+    V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * voxelBoxSizeScale) +
       GetVoxelCenter(voxels[i]).transpose().replicate<8, 1>();
     F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }

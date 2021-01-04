@@ -24,19 +24,18 @@ Voxel Voxel::Voxelize(const MatrixXd& V, const MatrixXi& F, int num_division)
   ssize_t nY = std::ceil(meshInfo.Size.y() / cubeSize);
   ssize_t nZ = std::ceil(meshInfo.Size.z() / cubeSize);
 
-
   Voxel voxel(nX, nY, nZ);
   voxel.CubeSize = cubeSize;
   voxel.Origin = meshInfo.Minimum;
   RowVector3f origin = meshInfo.Minimum.cast<float>().transpose() + offset;
 
-#pragma omp parallel for
+  vector<igl::Hit> hits;
+  int num_rays = 0;
+#pragma omp parallel for private(hits, num_rays)
   for (int i = 0; i < (int)nX; i++) {
     for (ssize_t j = 0; j < nY; j++) {
       for (ssize_t k = 0; k < nZ; k++) {
-        vector<igl::Hit> hits;
         RowVector3f position = voxel.GetVoxelCenter(i, j, k).cast<float>().transpose();
-        int num_rays = 0;
         intersector.intersectRay(position, direction, hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
         voxel(i, j, k) = hits.size() % 2 == 1;
       }
@@ -74,17 +73,20 @@ bool& Voxel::operator()(ssize_t x, ssize_t y, ssize_t z)
 Voxel::VoxelCoordList Voxel::GetSupportPointCandidates() const {
   VoxelCoordList result;
 
-  #pragma omp parallel for
-  for (int i = 0; i < (int)nX; i++) {
+#pragma omp parallel
+  {
     VoxelCoordList sublist;
-    for (ssize_t j = -1; j < nY - 1; j++) {
-      for (ssize_t k = 0; k < nZ; k++) {
-        if (!(*this)(i, j, k) && (*this)(i, j + 1, k)) {
-          sublist.push_back(VoxelCoord{i, j, k});
+#pragma omp for
+    for (int i = 0; i < (int)nX; i++) {
+      for (ssize_t j = -1; j < nY - 1; j++) {
+        for (ssize_t k = 0; k < nZ; k++) {
+          if (!(*this)(i, j, k) && (*this)(i, j + 1, k)) {
+            sublist.push_back(VoxelCoord{ i, j, k });
+          }
         }
       }
     }
-    #pragma omp critical
+#pragma omp critical
     result.insert(result.end(), sublist.begin(), sublist.end());
   }
   return result;

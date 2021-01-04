@@ -49,7 +49,6 @@ void MainUI::draw_viewer_menu()
       ImGui::Text("Size: (%.2lf, %.2lf, %.2lf)",
         meshInfo.Size.x(), meshInfo.Size.y(), meshInfo.Size.z());
       ImGui::InputInt("# of Division", &num_division, 1, 10);
-      ImGui::DragFloat3("Grip Direction", gripDirection.data());
       if (ImGui::Button("Voxelize")) {
         voxelize();
       }

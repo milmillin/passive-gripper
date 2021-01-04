@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <embree/common/sys/platform.h>
 
 #include "Utils.h"
 

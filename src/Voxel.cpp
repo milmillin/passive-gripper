@@ -168,4 +168,15 @@ Voxel::VoxelCoordList Voxel::GetAllVoxelIndex() const {
   return voxelIndices;
 }
 
+Vector3d Voxel::GetCenterPoint(const VoxelCoordList &voxels) {
+  double x = 0, y = 0, z = 0;
+  for (auto &voxel : voxels) {
+    x += voxel.x;
+    y += voxel.y;
+    z += voxel.z;
+  }
+  size_t n = voxels.size();
+  return Vector3d(x / n, y / n, z / n);
+}
+
 }  // namespace gripper

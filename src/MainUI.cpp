@@ -1,6 +1,7 @@
 #include "MainUI.h"
 
 #include "Voxel.h"
+#include "Geometry.h"
 
 namespace gripper {
 
@@ -16,9 +17,12 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer)
 {
   igl::opengl::glfw::imgui::ImGuiMenu::init(_viewer);
 
-  viewer->data_list.emplace_back();
-  viewer->data_list.back().id = LayerId::Voxelized;
-  viewer->next_data_id = 2;
+  // Add other layers
+  for (int layerID = 1; layerID < LayerId::Max; layerID++) {
+    viewer->data_list.emplace_back();
+    viewer->data_list.back().id = (LayerId) layerID;
+  }
+  viewer->next_data_id = LayerId::Max;
 
   // Set default point size
   viewer->data_list[LayerId::Voxelized].point_size = 3;
@@ -81,6 +85,16 @@ void MainUI::draw_viewer_menu()
 
     needRefresh |= ImGui::DragFloat3("Grip direction", gripDirection.data());
     needRefresh |= ImGui::Checkbox("Filter by grip direction", &filterByGripDirection);
+    needRefresh |= ImGui::Checkbox("Show support points", &showSupportPoints);
+
+    if (ImGui::Button("Generate random support point")) {
+      do
+        selectRandomSupportPoints();
+      while (evaluateSupportPoints() < 0.001);
+      needRefresh = true;
+    }
+    if (selectedSupportPoints.size() == 3)
+      ImGui::Text("Stability: %f", evaluateSupportPoints());
 
     if (needRefresh)
       refreshVoxel();
@@ -116,14 +130,10 @@ void MainUI::refreshVoxel() {
   } else {
     Voxel::VoxelCoordList voxels;
     if (showSupportPointCandidates) {
-      voxels = voxel.GetSupportPointCandidates();
-
-      if (filterByGripDirection) {
-        voxels = voxel.FilterByGrabDirection(voxels,
-          getMeshVertices(), getMeshFaces(),
-          gripDirection.cast<double>());
-      }
-    } else { // !showSupportPointCandidates
+      voxels = getCandidateSupportPoints();
+    } else if (showSupportPoints) {
+      voxels = selectedSupportPoints;
+    } else {
       voxels = voxel.GetAllVoxelIndex();
     }
 
@@ -134,6 +144,51 @@ void MainUI::refreshVoxel() {
     viewerData.set_face_based(true);
     viewerData.set_mesh(V, F);
   }
+}
+
+
+Voxel::VoxelCoordList MainUI::getCandidateSupportPoints() {
+    auto voxels = voxel.GetSupportPointCandidates();
+
+    if (filterByGripDirection) {
+      voxels = voxel.FilterByGrabDirection(voxels,
+        getMeshVertices(), getMeshFaces(),
+        gripDirection.cast<double>());
+    }
+
+    return voxels;
+}
+
+void MainUI::selectRandomSupportPoints() {
+  auto voxels = getCandidateSupportPoints();
+  auto selectedIndices = SelectInRange<size_t>(0, voxels.size() - 1, 3);
+
+  selectedSupportPoints.clear();
+  for (auto i : selectedIndices)
+    selectedSupportPoints.push_back(voxels[i]);
+}
+
+double MainUI::evaluateSupportPoints() {
+  auto allVoxels = voxel.GetAllVoxelIndex();
+  auto center = voxel.GetCenterPoint(allVoxels);
+
+  // Convert index to coordinate
+  vector<Vector3d> points;
+  for (auto p : selectedSupportPoints)
+    points.push_back(voxel.GetVoxelCoordVector<Vector3d>(p));
+
+  // Draw center point
+  auto &layer = viewer->data(LayerId::CenterPoint);
+  layer.clear();
+  layer.add_points((voxel.Origin + voxel.CubeSize * center).transpose(), Vector3d(1, 1, 1).transpose());
+  layer.point_size = 10;
+  layer.show_overlay = true;
+  std::cout << "Center " << center;
+
+  if (points.size() != 3)
+    throw std::runtime_error(ERROR_MESSAGE("Number of support points should be 3"));
+
+  return TriangleStability(center, points[0], points[1], points[2]);
 }
 
 }  // namespace gripper

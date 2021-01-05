@@ -42,16 +42,32 @@ public:
     const MatrixXi& F,
     Vector3d grabDirection) const;
 
+  Vector3d GetCenterPoint(const VoxelCoordList &voxels);
+
   ssize_t nX;
   ssize_t nY;
   ssize_t nZ;
   double CubeSize;
   Vector3d Origin;
+
+  template<class VectorClass>
+  inline VectorClass GetVoxelCoordVector(ssize_t index) const {
+    if (index >= m_nXYZ)
+      throw std::runtime_error(ERROR_MESSAGE("Voxel index out of bound"));
+    return VoxelCoord{index / m_nYZ, (index / nZ) % nY, index % nZ};
+  }
+
+  template<class VectorClass>
+  inline VectorClass GetVoxelCoordVector(VoxelCoord coord) const {
+    return VectorClass(coord.x, coord.y, coord.z);
+  }
+
 private:
   Eigen::Matrix<bool, -1, 1> m_data;
   ssize_t m_nYZ;
   ssize_t m_nXYZ;
 
+  // TODO: move inline functions
 
   inline ssize_t GetVoxelIndex(ssize_t x, ssize_t y, ssize_t z) const {
     return x * m_nYZ + y * nZ + z;
@@ -68,18 +84,6 @@ private:
     if (index >= m_nXYZ)
       throw std::runtime_error(ERROR_MESSAGE("Voxel index out of bound"));
     return VoxelCoord{index / m_nYZ, (index / nZ) % nY, index % nZ};
-  }
-
-  template<class VectorClass>
-  inline VectorClass GetVoxelCoordVector(ssize_t index) const {
-    if (index >= m_nXYZ)
-      throw std::runtime_error(ERROR_MESSAGE("Voxel index out of bound"));
-    return VoxelCoord{index / m_nYZ, (index / nZ) % nY, index % nZ};
-  }
-
-  template<class VectorClass>
-  inline VectorClass GetVoxelCoordVector(VoxelCoord coord) const {
-    return VectorClass(coord.x, coord.y, coord.z);
   }
 
   inline Vector3d GetVoxelCenter(int x, int y, int z) const {

@@ -76,13 +76,16 @@ Voxel::VoxelCoordList Voxel::GetSupportPointCandidates() const {
 
   #pragma omp parallel for
   for (int i = 0; i < (int)nX; i++) {
-    for (ssize_t j = -1; j < nY; j++) {
+    VoxelCoordList sublist;
+    for (ssize_t j = -1; j < nY - 1; j++) {
       for (ssize_t k = 0; k < nZ; k++) {
         if (!(*this)(i, j, k) && (*this)(i, j + 1, k)) {
-          result.push_back(VoxelCoord{i, j, k});
+          sublist.push_back(VoxelCoord{i, j, k});
         }
       }
     }
+    #pragma omp critical
+    result.insert(result.end(), sublist.begin(), sublist.end());
   }
   return result;
 }

@@ -126,7 +126,7 @@ void MainUI::refreshVoxel() {
     Eigen::MatrixXd P;
     voxel.GeneratePoints(P);
 
-    viewerData.set_points(P, Eigen::Vector3d(1, 1, 1));
+    viewerData.set_points(P, Eigen::RowVector3d(1, 1, 1));
   } else {
     Voxel::VoxelCoordList voxels;
     if (showSupportPointCandidates) {

@@ -26,6 +26,7 @@ private:
   Eigen::MatrixXi m_mesh_F;
 
   Voxels m_voxels;
+  Voxels::VoxelD m_centerOfMass;
 
   std::vector<Voxels::Voxel> m_allCoords;
   Eigen::MatrixXd m_all_V;
@@ -41,6 +42,11 @@ private:
   Eigen::MatrixXd m_filtered_V;
   Eigen::MatrixXi m_filtered_F;
   Eigen::MatrixXd m_filtered_P;
+
+  std::vector<Voxels::Voxel> m_bestCoords;
+  Eigen::MatrixXd m_best_V;
+  Eigen::MatrixXi m_best_F;
+  Eigen::MatrixXd m_best_P;
 };
 
 }

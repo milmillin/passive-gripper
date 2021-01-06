@@ -4,6 +4,8 @@
 #include <set>
 #include <random>
 
+#include "Voxels.h"
+
 namespace gripper {
 
 using Eigen::Vector3d;
@@ -44,5 +46,7 @@ set<T> SelectInRange(T start, T end, T n) {
 }
 
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
+
+std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>& voxelCoords, const Voxels::VoxelD& centerOfMass);
 
 }  // namespace gripper

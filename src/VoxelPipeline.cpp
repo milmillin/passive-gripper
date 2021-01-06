@@ -17,6 +17,7 @@ VoxelPipeline::VoxelPipeline(
 void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool isInit)
 {
   static Eigen::RowVector3d pointColor(1, 1, 1);
+  static Eigen::RowVector3d centerOfMassColor(1, 0.5, 1);
 
   m_isReady = false;
   bool requireUpdate = false;
@@ -27,6 +28,8 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
 
     // Filter Supporting Voxels
     m_supportingCoords = m_voxels.FilterSupportingVoxels(m_allCoords);
+    // Calculate Center of Mass
+    m_centerOfMass = m_voxels.GetCenterOfMass(m_allCoords);
 
     requireUpdate = true;
   }
@@ -39,20 +42,30 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     requireUpdate = true;
   }
 
+  // Solve Best Contact
+  if (isInit || requireUpdate || settings.findBestContact != m_settings.findBestContact) {
+    if (settings.findBestContact) m_bestCoords = FindBestContactDumb(m_filteredCoords, m_centerOfMass);
+    else m_bestCoords.clear();
+    printf("Best Coord Num %d\n", (int)m_bestCoords.size());
+    requireUpdate = true;
+  }
+
+  if (isInit || requireUpdate) {
+    // Compute Points
+    m_voxels.GeneratePoints(m_allCoords, m_all_P);
+    m_voxels.GeneratePoints(m_supportingCoords, m_supporting_P);
+    m_voxels.GeneratePoints(m_filteredCoords, m_filtered_P);
+    m_voxels.GeneratePoints(m_bestCoords, m_best_P);
+  }
+
   // Compute Mesh
   if (isInit || requireUpdate || settings.voxelScale != m_settings.voxelScale) {
     m_voxels.GenerateMesh(m_allCoords, settings.voxelScale, m_all_V, m_all_F);
     m_voxels.GenerateMesh(m_supportingCoords, settings.voxelScale, m_supporting_V, m_supporting_F);
     m_voxels.GenerateMesh(m_filteredCoords, settings.voxelScale, m_filtered_V, m_filtered_F);
+    m_voxels.GenerateMesh(m_bestCoords, settings.voxelScale, m_best_V, m_best_F);
     
     requireUpdate = true;
-  }
-
-  // Compute Points
-  if (isInit || requireUpdate) {
-    m_voxels.GeneratePoints(m_allCoords, m_all_P);
-    m_voxels.GeneratePoints(m_allCoords, m_supporting_P);
-    m_voxels.GeneratePoints(m_allCoords, m_filtered_P);
   }
 
   requireUpdate = requireUpdate || settings.showAsPoint != m_settings.showAsPoint;
@@ -77,13 +90,17 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     m_mainUI->viewerDataMutex.lock();
 
     igl::opengl::ViewerData& data_all = m_mainUI->GetViewerData(LayerId::VoxelAll);
-    setData(data_all, m_all_V, m_all_F, m_all_V);
+    setData(data_all, m_all_V, m_all_F, m_all_P);
     
     igl::opengl::ViewerData& data_supporting = m_mainUI->GetViewerData(LayerId::VoxelSupporting);
-    setData(data_supporting, m_supporting_V, m_supporting_F, m_supporting_V);
+    setData(data_supporting, m_supporting_V, m_supporting_F, m_supporting_P);
 
     igl::opengl::ViewerData& data_filtered = m_mainUI->GetViewerData(LayerId::VoxelFiltered);
-    setData(data_filtered, m_filtered_V, m_filtered_F, m_filtered_V);
+    setData(data_filtered, m_filtered_V, m_filtered_F, m_filtered_P);
+
+    igl::opengl::ViewerData& data_best = m_mainUI->GetViewerData(LayerId::VoxelBest);
+    setData(data_best, m_best_V, m_best_F, m_best_P);
+    data_best.add_points(m_voxels.GetVoxelCenter<double>(m_centerOfMass).transpose(), centerOfMassColor);
 
     m_mainUI->viewerDataMutex.unlock();
   }

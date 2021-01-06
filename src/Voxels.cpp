@@ -142,10 +142,12 @@ void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords, float voxelBoxS
   out_V.resize(8 * numVoxels, 3);
   out_F.resize(12 * numVoxels, 3);
 
+  Eigen::Vector3d offset = Eigen::Vector3d::Constant(CubeSize * voxelBoxSizeScale * 0.5);
+
   #pragma omp parallel for
   for (ssize_t i = 0; i < numVoxels; i++) {
     out_V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * voxelBoxSizeScale) +
-      GetVoxelCenter<double>(voxelCoords[i]).transpose().replicate<8, 1>();
+      (GetVoxelCenter<double>(voxelCoords[i]) - offset).transpose().replicate<8, 1>();
     out_F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }
@@ -157,7 +159,7 @@ void Voxels::GeneratePoints(const std::vector<Voxel>& voxelCoords, MatrixXd& out
 
   #pragma omp parallel for
   for (ssize_t i = 0; i < numVoxels; i++) {
-    out_P.row(i) = Origin + CubeSize * GetVoxelCenter<double>(voxelCoords[i]);
+    out_P.row(i) = GetVoxelCenter<double>(voxelCoords[i]);
   }
 }
 

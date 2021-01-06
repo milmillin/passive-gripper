@@ -22,7 +22,7 @@ enum LayerId {
   VoxelAll,
   VoxelSupporting,
   VoxelFiltered,
-  CenterPoint,
+  VoxelBest,
   Max
 };
 
@@ -43,7 +43,7 @@ public:
   std::mutex viewerDataMutex;
   inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) { return viewer->data(layerId); }
 private:
-  void VoxelUpdate();
+  void UpdateVoxels();
   void DrawGrabDirection();
 
   inline Eigen::MatrixXd& GetMeshVertices() { return viewer->data(LayerId::Mesh).V; }

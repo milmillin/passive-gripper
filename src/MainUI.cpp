@@ -87,11 +87,12 @@ void MainUI::draw_viewer_menu()
       }
       ImGui::InputFloat("Voxel scale", &voxelSettings.voxelScale, 0.1, 0.2);
       ImGui::Checkbox("Show as point", &voxelSettings.showAsPoint);
+      ImGui::Checkbox("Find Best Contact", &voxelSettings.findBestContact);
       ImGui::PopItemWidth();
 
       if (voxelPipeline == nullptr || voxelPipeline->IsReady()) {
-        if (ImGui::Button("Update", ImVec2(w - p, 0))) {
-          VoxelUpdate();
+        if (ImGui::Button("Update Voxels", ImVec2(w - p, 0))) {
+          UpdateVoxels();
         }
       }
       else {
@@ -111,6 +112,7 @@ void MainUI::draw_viewer_menu()
     ImGui::Checkbox("Voxel", (bool*)&(viewer->data(LayerId::VoxelAll).is_visible));
     ImGui::Checkbox("Voxel Support", (bool*)&(viewer->data(LayerId::VoxelSupporting).is_visible));
     ImGui::Checkbox("Voxel Filtered", (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));
+    ImGui::Checkbox("Voxel Best", (bool*)&(viewer->data(LayerId::VoxelBest).is_visible));
 
     ImGui::PopID();
   }
@@ -125,7 +127,7 @@ bool MainUI::post_load()
   return true;
 }
 
-void MainUI::VoxelUpdate()
+void MainUI::UpdateVoxels()
 {
   bool isInit = false;
   if (voxelPipeline == nullptr) {

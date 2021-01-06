@@ -41,9 +41,10 @@ public:
   inline bool post_draw() override;
   
   std::mutex viewerDataMutex;
-  igl::opengl::ViewerData& GetViewerData(LayerId layerId);
+  inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) { return viewer->data(layerId); }
 private:
   void VoxelUpdate();
+  void DrawGrabDirection();
 
   inline Eigen::MatrixXd& GetMeshVertices() { return viewer->data(LayerId::Mesh).V; }
   inline Eigen::MatrixXi& GetMeshFaces() { return viewer->data(LayerId::Mesh).F; }

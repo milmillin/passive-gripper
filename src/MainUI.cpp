@@ -32,6 +32,7 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer)
   viewer->data_list[LayerId::VoxelAll].point_size = 3;
   viewer->data_list[LayerId::VoxelSupporting].point_size = 3;
   viewer->data_list[LayerId::VoxelFiltered].point_size = 3;
+
 }
 
 void MainUI::draw_viewer_window()
@@ -81,7 +82,9 @@ void MainUI::draw_viewer_menu()
         
       ImGui::PushItemWidth(120.f);
       ImGui::InputInt("# of Division", &voxelSettings.numDivision, 1, 10);
-      ImGui::InputFloat3("Grab direction", voxelSettings.grabDirection.data());
+      if (ImGui::DragFloat2("Grab angle", voxelSettings.grabAngle.data(), 1.f, -360.f, 360.f)) {
+        DrawGrabDirection();
+      }
       ImGui::InputFloat("Voxel scale", &voxelSettings.voxelScale, 0.1, 0.2);
       ImGui::Checkbox("Show as point", &voxelSettings.showAsPoint);
       ImGui::PopItemWidth();
@@ -118,14 +121,9 @@ bool MainUI::post_load()
   meshLoaded = true;
   meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
   voxelPipeline.reset();
+  DrawGrabDirection();
   return true;
 }
-
-igl::opengl::ViewerData& MainUI::GetViewerData(LayerId layerId)
-{
-  return viewer->data(layerId);
-}
-
 
 void MainUI::VoxelUpdate()
 {
@@ -142,6 +140,17 @@ void MainUI::VoxelUpdate()
     done->store(true);
     });
   tasks.push_back(std::move(std::make_pair(std::unique_ptr<std::atomic<bool>>(done), std::unique_ptr<std::thread>(task))));
+}
+
+void MainUI::DrawGrabDirection() {
+  static Eigen::RowVector3d directionColor = Eigen::RowVector3d(1, 0.5, 0);
+  auto &layer = viewer->data(LayerId::Mesh);
+  layer.clear_edges();
+  layer.add_edges(
+    Eigen::RowVector3d::Zero(),
+    GetDirectionFromAngle(voxelSettings.grabAngle).cast<double>().transpose() * 3,
+    directionColor
+  );
 }
 
 bool MainUI::pre_draw()

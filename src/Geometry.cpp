@@ -40,4 +40,14 @@ double TriangleStability(const Vector3d &p,
   return std::min({d1, d2, d3});
 }
 
+Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
+  float A = angle(0) / 180.f * EIGEN_PI;
+  float B = angle(1) / 180.f * EIGEN_PI;
+  float cosA = std::cosf(A);
+  float sinA = std::sinf(A);
+  float cosB = std::cosf(B);
+  float sinB = std::sinf(B);
+  return Eigen::Vector3f(cosA * cosB, sinB, sinA * cosB);
+}
+
 }  // namespace gripper

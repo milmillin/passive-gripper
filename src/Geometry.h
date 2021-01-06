@@ -43,4 +43,6 @@ set<T> SelectInRange(T start, T end, T n) {
   return selected;
 }
 
+Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
+
 }  // namespace gripper

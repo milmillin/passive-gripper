@@ -7,7 +7,7 @@ struct VoxelPipelineSettings {
   int numDivision = 30;
 
   // Filter Voxel Settings
-  Eigen::Vector3f grabDirection = Eigen::Vector3f(-1, 0, 0);
+  Eigen::Vector2f grabAngle = Eigen::Vector2f(0, 0); // In degrees
 
   // View Settings
   bool showAsPoint = false;

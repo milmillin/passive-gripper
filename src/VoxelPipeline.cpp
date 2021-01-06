@@ -1,4 +1,5 @@
 #include "VoxelPipeline.h"
+#include "Geometry.h"
 
 namespace gripper {
 
@@ -31,8 +32,9 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
   }
   
   // Filter Grab Direction
-  if (isInit || requireUpdate || settings.grabDirection != m_settings.grabDirection) {
-    m_filteredCoords = m_voxels.FilterGrabDirection(m_supportingCoords, m_mesh_V, m_mesh_F, settings.grabDirection);
+  if (isInit || requireUpdate || settings.grabAngle != m_settings.grabAngle) {
+    Eigen::Vector3f grabDirection = -GetDirectionFromAngle(settings.grabAngle);
+    m_filteredCoords = m_voxels.FilterGrabDirection(m_supportingCoords, m_mesh_V, m_mesh_F, grabDirection);
 
     requireUpdate = true;
   }

@@ -4,51 +4,60 @@
 #include <Eigen/Core>
 
 #include "MeshInfo.h"
-#include "Voxel.h"
+#include "Voxels.h"
+#include "VoxelPipeline.h"
+#include "VoxelPipelineSettings.h"
+
+#include <mutex>
+#include <vector>
+#include <queue>
+#include <atomic>
+#include <thread>
+#include <memory>
 
 namespace gripper {
 
 enum LayerId {
   Mesh = 0,
-  Voxelized,
+  VoxelAll,
+  VoxelSupporting,
+  VoxelFiltered,
   CenterPoint,
   Max
 };
 
+class VoxelPipeline;
+
 class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
 public:
   MainUI();
+  ~MainUI();
 
-  void init(igl::opengl::glfw::Viewer* _viewer);
-  void draw_viewer_menu();
-  bool post_load();
-
+  void init(igl::opengl::glfw::Viewer* _viewer) override;
+  void draw_viewer_window() override;
+  void draw_viewer_menu() override;
+  bool post_load() override;
+  inline bool pre_draw() override;
+  inline bool post_draw() override;
+  
+  std::mutex viewerDataMutex;
+  igl::opengl::ViewerData& GetViewerData(LayerId layerId);
 private:
-  void voxelize();
-  void refreshVoxel();
+  void VoxelUpdate();
 
-  inline Eigen::MatrixXd &getMeshVertices() { return viewer->data(LayerId::Mesh).V; }
-  inline Eigen::MatrixXi &getMeshFaces() { return viewer->data(LayerId::Mesh).F; }
+  inline Eigen::MatrixXd& GetMeshVertices() { return viewer->data(LayerId::Mesh).V; }
+  inline Eigen::MatrixXi& GetMeshFaces() { return viewer->data(LayerId::Mesh).F; }
 
+  // Mesh
   bool meshLoaded;
   MeshInfo meshInfo;
 
-  bool voxelized;
-  Voxel voxel;
-  int num_division;
+  // VoxelPipeline
+  std::unique_ptr<VoxelPipeline> voxelPipeline;
+  VoxelPipelineSettings voxelSettings;
 
-  float voxelBoxSizeScale = 0.5;
-  bool showPoints = false;
-  bool showSupportPointCandidates = false;
-  bool filterByGripDirection = false;
-  Eigen::Vector3f gripDirection = Eigen::Vector3f(-1, 0, 0);
-
-  bool showSupportPoints;
-  Voxel::VoxelCoordList selectedSupportPoints;
-
-  Voxel::VoxelCoordList getCandidateSupportPoints();
-  void selectRandomSupportPoints();
-  double evaluateSupportPoints();
+  // Task
+  std::deque<std::pair<std::unique_ptr<std::atomic<bool>>, std::unique_ptr<std::thread>>> tasks;
 };
 
 }

@@ -1,17 +1,21 @@
 #include "MainUI.h"
 
-#include "Voxel.h"
 #include "Geometry.h"
 
 namespace gripper {
 
 MainUI::MainUI():
   igl::opengl::glfw::imgui::ImGuiMenu(),
-  meshLoaded(false),
-  voxelized(false),
-  voxel(0, 0, 0),
-  num_division(30)
+  meshLoaded(false)
 { }
+
+MainUI::~MainUI()
+{
+  while (!tasks.empty()) {
+    tasks.front().second->join();
+    tasks.pop_front();
+  }
+}
 
 void MainUI::init(igl::opengl::glfw::Viewer* _viewer)
 {
@@ -25,7 +29,28 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer)
   viewer->next_data_id = LayerId::Max;
 
   // Set default point size
-  viewer->data_list[LayerId::Voxelized].point_size = 3;
+  viewer->data_list[LayerId::VoxelAll].point_size = 3;
+  viewer->data_list[LayerId::VoxelSupporting].point_size = 3;
+  viewer->data_list[LayerId::VoxelFiltered].point_size = 3;
+}
+
+void MainUI::draw_viewer_window()
+{
+  float menu_width = 180.f * menu_scaling();
+  ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSizeConstraints(ImVec2(menu_width, -1.0f), ImVec2(300.0f, -1.0f));
+  bool _viewer_menu_visible = true;
+  ImGui::Begin(
+      "Viewer", &_viewer_menu_visible,
+      ImGuiWindowFlags_NoSavedSettings
+      | ImGuiWindowFlags_AlwaysAutoResize
+  );
+  ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+  if (callback_draw_viewer_menu) { callback_draw_viewer_menu(); }
+  else { draw_viewer_menu(); }
+  ImGui::PopItemWidth();
+  ImGui::End();
 }
 
 void MainUI::draw_viewer_menu()
@@ -52,51 +77,37 @@ void MainUI::draw_viewer_menu()
         meshInfo.Maximum.x(), meshInfo.Maximum.y(), meshInfo.Maximum.z());
       ImGui::Text("Size: (%.2lf, %.2lf, %.2lf)",
         meshInfo.Size.x(), meshInfo.Size.y(), meshInfo.Size.z());
-      ImGui::InputInt("# of Division", &num_division, 1, 10);
-      if (ImGui::Button("Voxelize")) {
-        voxelize();
+      ImGui::Separator();
+        
+      ImGui::PushItemWidth(120.f);
+      ImGui::InputInt("# of Division", &voxelSettings.numDivision, 1, 10);
+      ImGui::InputFloat3("Grab direction", voxelSettings.grabDirection.data());
+      ImGui::InputFloat("Voxel scale", &voxelSettings.voxelScale, 0.1, 0.2);
+      ImGui::Checkbox("Show as point", &voxelSettings.showAsPoint);
+      ImGui::PopItemWidth();
+
+      if (voxelPipeline == nullptr || voxelPipeline->IsReady()) {
+        if (ImGui::Button("Update", ImVec2(w - p, 0))) {
+          VoxelUpdate();
+        }
       }
-    }
-    if (voxelized) {
-      if (ImGui::CollapsingHeader("Result", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("# of Cubes %llu", (long long unsigned) voxel.nX * voxel.nY * voxel.nZ);
-        ImGui::Text("%llu x %llu x %llu",
-          (long long unsigned) voxel.nX,
-          (long long unsigned) voxel.nY,
-          (long long unsigned) voxel.nZ);
+      else {
+        ImGui::Text("Busy...");
       }
     }
   }
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("View");
-
-    bool needRefresh = false;
+    if (ImGui::InputFloat("Point Size", &(viewer->data(LayerId::VoxelAll).point_size), 1, 2, "%.0f")) {
+      viewer->data(LayerId::VoxelFiltered).point_size =
+        viewer->data(LayerId::VoxelSupporting).point_size =
+        viewer->data(LayerId::VoxelAll).point_size;
+    }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
-    ImGui::Checkbox("Voxelized", (bool*)&(viewer->data(LayerId::Voxelized).is_visible));
-    needRefresh |= ImGui::Checkbox("Show voxel as points", &showPoints);
-    needRefresh |= ImGui::Checkbox("Show support point candidates", &showSupportPointCandidates);
-    if (showPoints) {
-      ImGui::DragFloat("Point size", &(viewer->data_list[LayerId::Voxelized].point_size));
-    } else {
-      needRefresh |= ImGui::DragFloat("Voxel box size scale", &(voxelBoxSizeScale));
-    }
-
-    needRefresh |= ImGui::DragFloat3("Grip direction", gripDirection.data());
-    needRefresh |= ImGui::Checkbox("Filter by grip direction", &filterByGripDirection);
-    needRefresh |= ImGui::Checkbox("Show support points", &showSupportPoints);
-
-    if (ImGui::Button("Generate random support point")) {
-      do
-        selectRandomSupportPoints();
-      while (evaluateSupportPoints() < 0.001);
-      needRefresh = true;
-    }
-    if (selectedSupportPoints.size() == 3)
-      ImGui::Text("Stability: %f", evaluateSupportPoints());
-
-    if (needRefresh)
-      refreshVoxel();
+    ImGui::Checkbox("Voxel", (bool*)&(viewer->data(LayerId::VoxelAll).is_visible));
+    ImGui::Checkbox("Voxel Support", (bool*)&(viewer->data(LayerId::VoxelSupporting).is_visible));
+    ImGui::Checkbox("Voxel Filtered", (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));
 
     ImGui::PopID();
   }
@@ -105,53 +116,59 @@ void MainUI::draw_viewer_menu()
 bool MainUI::post_load()
 {
   meshLoaded = true;
-  meshInfo = MeshInfo(getMeshVertices(), getMeshFaces());
+  meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
+  voxelPipeline.reset();
   return true;
 }
 
-void MainUI::voxelize()
+igl::opengl::ViewerData& MainUI::GetViewerData(LayerId layerId)
 {
-  voxel = Voxel::Voxelize(getMeshVertices(), getMeshFaces(), num_division);
-  voxelized = true;
-
-  refreshVoxel();
+  return viewer->data(layerId);
 }
 
-void MainUI::refreshVoxel() {
-  igl::opengl::ViewerData& viewerData = viewer->data(LayerId::Voxelized);
-  viewerData.clear();
 
-  if (showPoints) {
-    Eigen::MatrixXd P;
-    voxel.GeneratePoints(P);
-
-    viewerData.set_points(P, Eigen::RowVector3d(1, 1, 1));
-  } else {
-    Voxel::VoxelCoordList voxels;
-    if (showSupportPointCandidates) {
-      voxels = getCandidateSupportPoints();
-    } else if (showSupportPoints) {
-      voxels = selectedSupportPoints;
-    } else {
-      voxels = voxel.GetAllVoxelIndex();
-    }
-
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    voxel.GenerateMesh(V, F, voxelBoxSizeScale, voxels);
-
-    viewerData.set_face_based(true);
-    viewerData.set_mesh(V, F);
+void MainUI::VoxelUpdate()
+{
+  bool isInit = false;
+  if (voxelPipeline == nullptr) {
+    voxelPipeline.reset(new VoxelPipeline(this, GetMeshVertices(), GetMeshFaces()));
+    isInit = true;
   }
+  
+  // Update using new thread
+  auto done = new std::atomic<bool>(false);
+  auto task = new std::thread([=] {
+    voxelPipeline->UpdateSettings(voxelSettings, isInit);
+    done->store(true);
+    });
+  tasks.push_back(std::move(std::make_pair(std::unique_ptr<std::atomic<bool>>(done), std::unique_ptr<std::thread>(task))));
 }
 
+bool MainUI::pre_draw()
+{
+  while (!tasks.empty() && tasks.front().first->load()) {
+    tasks.front().second->join();
+    tasks.pop_front();
+  }
+  viewerDataMutex.lock();
+  ImGuiMenu::pre_draw();
+  return false;
+}
 
-Voxel::VoxelCoordList MainUI::getCandidateSupportPoints() {
+bool MainUI::post_draw()
+{
+  ImGuiMenu::post_draw();
+  viewerDataMutex.unlock();
+  return false;
+}
+
+/*
+Voxels::VoxelCoordList MainUI::getCandidateSupportPoints() {
     auto voxels = voxel.GetSupportPointCandidates();
 
     if (filterByGripDirection) {
       voxels = voxel.FilterByGrabDirection(voxels,
-        getMeshVertices(), getMeshFaces(),
+        GetMeshVertices(), GetMeshFaces(),
         gripDirection.cast<double>());
     }
 
@@ -189,5 +206,6 @@ double MainUI::evaluateSupportPoints() {
 
   return TriangleStability(center, points[0], points[1], points[2]);
 }
+*/
 
 }  // namespace gripper

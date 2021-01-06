@@ -24,11 +24,12 @@ if (MSVC)
   )
 else()
   # For other compilers
+  # Enable OpenMP
   # Enable Warning
   set_source_files_properties(
     ${SRCFILES}
     PROPERTIES
-    COMPILE_FLAGS "-Wall -Wextra -pedantic"
+    COMPILE_FLAGS "-Wall -Wextra -pedantic -fopenmp"
   )
 endif()
 

@@ -10,7 +10,9 @@ namespace gripper {
 
 enum LayerId {
   Mesh = 0,
-  Voxelized = 1
+  Voxelized,
+  CenterPoint,
+  Max
 };
 
 class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
@@ -40,6 +42,13 @@ private:
   bool showSupportPointCandidates = false;
   bool filterByGripDirection = false;
   Eigen::Vector3f gripDirection = Eigen::Vector3f(-1, 0, 0);
+
+  bool showSupportPoints;
+  Voxel::VoxelCoordList selectedSupportPoints;
+
+  Voxel::VoxelCoordList getCandidateSupportPoints();
+  void selectRandomSupportPoints();
+  double evaluateSupportPoints();
 };
 
 }

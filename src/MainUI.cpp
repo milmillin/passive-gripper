@@ -118,15 +118,6 @@ void MainUI::draw_viewer_menu()
   }
 }
 
-bool MainUI::post_load()
-{
-  meshLoaded = true;
-  meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
-  voxelPipeline.reset();
-  DrawGrabDirection();
-  return true;
-}
-
 void MainUI::UpdateVoxels()
 {
   bool isInit = false;
@@ -173,50 +164,14 @@ bool MainUI::post_draw()
   return false;
 }
 
-/*
-Voxels::VoxelCoordList MainUI::getCandidateSupportPoints() {
-    auto voxels = voxel.GetSupportPointCandidates();
-
-    if (filterByGripDirection) {
-      voxels = voxel.FilterByGrabDirection(voxels,
-        GetMeshVertices(), GetMeshFaces(),
-        gripDirection.cast<double>());
-    }
-
-    return voxels;
+bool MainUI::post_load()
+{
+  meshLoaded = true;
+  meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
+  voxelPipeline.reset();
+  DrawGrabDirection();
+  return true;
 }
 
-void MainUI::selectRandomSupportPoints() {
-  auto voxels = getCandidateSupportPoints();
-  auto selectedIndices = SelectInRange<size_t>(0, voxels.size() - 1, 3);
-
-  selectedSupportPoints.clear();
-  for (auto i : selectedIndices)
-    selectedSupportPoints.push_back(voxels[i]);
-}
-
-double MainUI::evaluateSupportPoints() {
-  auto allVoxels = voxel.GetAllVoxelIndex();
-  auto center = voxel.GetCenterPoint(allVoxels);
-
-  // Convert index to coordinate
-  vector<Vector3d> points;
-  for (auto p : selectedSupportPoints)
-    points.push_back(voxel.GetVoxelCoordVector<Vector3d>(p));
-
-  // Draw center point
-  auto &layer = viewer->data(LayerId::CenterPoint);
-  layer.clear();
-  layer.add_points((voxel.Origin + voxel.CubeSize * center).transpose(), Vector3d(1, 1, 1).transpose());
-  layer.point_size = 10;
-  layer.show_overlay = true;
-  std::cout << "Center " << center;
-
-  if (points.size() != 3)
-    throw std::runtime_error(ERROR_MESSAGE("Number of support points should be 3"));
-
-  return TriangleStability(center, points[0], points[1], points[2]);
-}
-*/
 
 }  // namespace gripper

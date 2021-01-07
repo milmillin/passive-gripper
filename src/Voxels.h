@@ -35,12 +35,12 @@ public:
 
   template<typename T, typename U>
   inline Eigen::Matrix<T, 3, 1> GetVoxelCenter(const Eigen::Matrix<U, 3, 1>& voxel) const {
-    return (Origin + (voxel.cast<double>() + Vector3d(0.5, 0.5, 0.5)) * CubeSize).cast<T>();
+    return (Origin + (voxel.template cast<double>() + Vector3d(0.5, 0.5, 0.5)) * CubeSize).template cast<T>();
   }
 
   template<typename T, typename U>
   inline Eigen::Matrix<T, 3, 1> GetVoxelOrigin(const Eigen::Matrix<U, 3, 1>& voxel) const {
-    return (Origin + voxel.cast<double>() * CubeSize).cast<T>();
+    return (Origin + voxel.template cast<double>() * CubeSize).template cast<T>();
   }
 
   VoxelD GetCenterOfMass(const std::vector<Voxel>& voxelCoords) const;

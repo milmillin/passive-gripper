@@ -90,10 +90,10 @@ std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>&
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
   float A = angle(0) / 180.f * EIGEN_PI;
   float B = angle(1) / 180.f * EIGEN_PI;
-  float cosA = std::cosf(A);
-  float sinA = std::sinf(A);
-  float cosB = std::cosf(B);
-  float sinB = std::sinf(B);
+  float cosA = std::cos(A);
+  float sinA = std::sin(A);
+  float cosB = std::cos(B);
+  float sinB = std::sin(B);
   return Eigen::Vector3f(cosA * cosB, sinB, sinA * cosB);
 }
 

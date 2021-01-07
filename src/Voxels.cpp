@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <igl/embree/EmbreeIntersector.h>
 #include <vector>
+#include <omp.h>
 
 #include "MeshInfo.h"
 #include "Utils.h"

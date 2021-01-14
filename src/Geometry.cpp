@@ -119,4 +119,29 @@ bool IsSupportPointStable(const Vector3d &center, const Eigen::Matrix3d &rotatio
   return IsSupportPointStable(rotation * center, newP[0], newP[1], newP[2]);
 }
 
+static double getMinStableAngleHelper(const Vector3d &p1, const Vector3d &p2, const Vector3d &other) {
+  Vector3d n = p1.cross(p2);
+  if (n.dot(other) < 0)
+    n = -n;
+
+  auto &gravity = -Vector3d::UnitY();
+  return EIGEN_PI / 2 - 2 * std::atan2((n - gravity).norm(), (n + gravity).norm());
+}
+
+double getMinStableAngle(const Vector3d &center,
+    double threshold,
+    const vector<Vector3d> &p, const vector<Vector3d> &dir) {
+  assert(dir.size() == 3 && p.size() == 3);
+  assert(threshold >= -0.0);
+
+  vector<Vector3d> unitP;
+  for (auto &point : p)
+    unitP.push_back((point - center).normalized());
+
+  double a1 = getMinStableAngleHelper(unitP[0], unitP[1], unitP[2]);
+  double a2 = getMinStableAngleHelper(unitP[1], unitP[2], unitP[0]);
+  double a3 = getMinStableAngleHelper(unitP[2], unitP[0], unitP[1]);
+  return std::min({a1, a2, a3});
+}
+
 }  // namespace gripper

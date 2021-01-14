@@ -1,8 +1,10 @@
 #pragma once
 
-#include <Eigen/Core>
 #include <set>
 #include <random>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include "Voxels.h"
 
@@ -52,5 +54,9 @@ std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>&
 bool IsSupportPointStable(const Vector3d &center, const Eigen::Matrix3d &rotation,
     double threshold,
     const vector<Vector3d> &p, const vector<Vector3d> &dir);
+
+double getMinStableAngle(const Vector3d &center,
+  double threshold,
+  const vector<Vector3d> &p, const vector<Vector3d> &dir);
 
 }  // namespace gripper

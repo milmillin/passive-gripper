@@ -148,7 +148,7 @@ void MainUI::draw_viewer_menu()
 
     ImGui::Text("Stability: %f", stability);
     ImGui::Text("Min Stable Angle: %f", minStablePitch);
-    ImGui::Text("Min Stable Angle Accurate: %f", minStablePitchAccurate);
+    ImGui::Text("Min Stable Angle (Geometry): %f", minStablePitchByGeometry);
     ImGui::Text("Time: %fms", calculationTime.count() / 1e6);
     ImGui::PopID();
   }
@@ -211,7 +211,7 @@ void MainUI::evaluateNewMetric() {
   auto endTime = std::chrono::high_resolution_clock().now();
   calculationTime = std::chrono::nanoseconds(endTime - startTime);
 
-  minStablePitchAccurate = getMinStableAngle(center.cast<double>(),
+  minStablePitchByGeometry = getMinStableAngle(center.cast<double>(),
           threshold,
           newP, newDir);
 

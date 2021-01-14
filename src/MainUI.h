@@ -66,7 +66,7 @@ private:
   float threshold = 0.05;
   double stability = 0;
   double minStablePitch = 0;
-  double minStablePitchAccurate = 0;
+  double minStablePitchByGeometry = 0;
   std::chrono::nanoseconds calculationTime;
 
   void evaluateNewMetric();

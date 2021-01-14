@@ -23,6 +23,7 @@ enum LayerId {
   VoxelSupporting,
   VoxelFiltered,
   VoxelBest,
+  GripperMesh,
   Max
 };
 

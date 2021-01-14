@@ -1,5 +1,7 @@
 #include "VoxelPipeline.h"
+
 #include "Geometry.h"
+#include "Gripper.h"
 
 namespace gripper {
 
@@ -10,7 +12,8 @@ VoxelPipeline::VoxelPipeline(
   m_mainUI(mainUI),
   m_isReady(false),
   m_mesh_V(mesh_V),
-  m_mesh_F(mesh_F)
+  m_mesh_F(mesh_F),
+  m_meshInfo(mesh_V, mesh_F)
 { }
 
 // Called from background thread
@@ -27,7 +30,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     Voxels::Voxelize(m_mesh_V, m_mesh_F, settings.numDivision, m_voxels, m_allCoords);
 
     // Filter Supporting Voxels
-    m_supportingCoords = m_voxels.FilterSupportingVoxels(m_allCoords);
+    m_supportingCoords = m_voxels.FilterSupportingVoxels(m_allCoords, m_meshInfo.minimum.y());
     // Calculate Center of Mass
     m_centerOfMass = m_voxels.GetCenterOfMass(m_allCoords);
 
@@ -46,9 +49,13 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
   if (isInit || requireUpdate || settings.findBestContact != m_settings.findBestContact) {
     if (settings.findBestContact) m_bestCoords = FindBestContactDumb(m_filteredCoords, m_centerOfMass);
     else m_bestCoords.clear();
-    printf("Best Coord Num %d\n", (int)m_bestCoords.size());
+
+    // Generate Gripper
+    m_gripper = Gripper(m_mesh_V, m_mesh_F, m_voxels, m_bestCoords, settings.grabAngle);
+
     requireUpdate = true;
   }
+
 
   if (isInit || requireUpdate) {
     // Compute Points
@@ -101,6 +108,11 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     igl::opengl::ViewerData& data_best = m_mainUI->GetViewerData(LayerId::VoxelBest);
     setData(data_best, m_best_V, m_best_F, m_best_P);
     data_best.add_points(m_voxels.GetVoxelCenter<double>(m_centerOfMass).transpose(), centerOfMassColor);
+
+    igl::opengl::ViewerData& data_gripper = m_mainUI->GetViewerData(LayerId::GripperMesh);
+    data_gripper.clear();
+    data_gripper.set_face_based(true);
+    data_gripper.set_mesh(m_gripper.V(), m_gripper.F());
 
     m_mainUI->viewerDataMutex.unlock();
   }

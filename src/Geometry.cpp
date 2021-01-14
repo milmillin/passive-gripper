@@ -87,6 +87,21 @@ std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>&
   return result;
 }
 
+Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size)
+{
+  for (ssize_t i = 0; i < 3; i++) {
+    if (size(i) < 0) {
+      origin(i) += size(i);
+      size(i) = -size(i);
+    }
+  }
+
+  Eigen::MatrixXd out_V;
+  out_V = cube_V.cwiseProduct(size.transpose().replicate<8, 1>())
+    + origin.transpose().replicate<8, 1>();
+  return out_V;
+}
+
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
   float A = angle(0) / 180.f * EIGEN_PI;
   float B = angle(1) / 180.f * EIGEN_PI;

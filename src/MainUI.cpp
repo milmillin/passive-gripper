@@ -73,11 +73,11 @@ void MainUI::draw_viewer_menu()
   if (meshLoaded) {
     if (ImGui::CollapsingHeader("Voxelization", ImGuiTreeNodeFlags_DefaultOpen)) {
       ImGui::Text("Minimum: (%.2lf, %.2lf, %.2lf)",
-        meshInfo.Minimum.x(), meshInfo.Minimum.y(), meshInfo.Minimum.z());
+        meshInfo.minimum.x(), meshInfo.minimum.y(), meshInfo.minimum.z());
       ImGui::Text("Maximum: (%.2lf, %.2lf, %.2lf)",
-        meshInfo.Maximum.x(), meshInfo.Maximum.y(), meshInfo.Maximum.z());
+        meshInfo.maximum.x(), meshInfo.maximum.y(), meshInfo.maximum.z());
       ImGui::Text("Size: (%.2lf, %.2lf, %.2lf)",
-        meshInfo.Size.x(), meshInfo.Size.y(), meshInfo.Size.z());
+        meshInfo.size.x(), meshInfo.size.y(), meshInfo.size.z());
       ImGui::Separator();
         
       ImGui::PushItemWidth(120.f);
@@ -113,6 +113,7 @@ void MainUI::draw_viewer_menu()
     ImGui::Checkbox("Voxel Support", (bool*)&(viewer->data(LayerId::VoxelSupporting).is_visible));
     ImGui::Checkbox("Voxel Filtered", (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));
     ImGui::Checkbox("Voxel Best", (bool*)&(viewer->data(LayerId::VoxelBest).is_visible));
+    ImGui::Checkbox("Gripper", (bool*)&(viewer->data(LayerId::GripperMesh).is_visible));
 
     ImGui::PopID();
   }

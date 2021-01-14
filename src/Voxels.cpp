@@ -7,6 +7,7 @@
 
 #include "MeshInfo.h"
 #include "Utils.h"
+#include "Geometry.h"
 
 namespace gripper {
 
@@ -17,18 +18,18 @@ void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, int numDiv
   intersector.init(mesh_V.cast<float>(), mesh_F, true);
 
   MeshInfo meshInfo(mesh_V, mesh_F);
-  double cubeSize = (meshInfo.Size / numDivision).minCoeff();
+  double cubeSize = (meshInfo.size / numDivision).minCoeff();
   RowVector3f offset = RowVector3f::Constant(cubeSize / 2);
   RowVector3f direction(0, 0, 1);
-  double tFar = meshInfo.Size.maxCoeff();
+  double tFar = meshInfo.size.maxCoeff();
 
-  ssize_t nX = std::ceil(meshInfo.Size.x() / cubeSize);
-  ssize_t nY = std::ceil(meshInfo.Size.y() / cubeSize);
-  ssize_t nZ = std::ceil(meshInfo.Size.z() / cubeSize);
+  ssize_t nX = std::ceil(meshInfo.size.x() / cubeSize);
+  ssize_t nY = std::ceil(meshInfo.size.y() / cubeSize);
+  ssize_t nZ = std::ceil(meshInfo.size.z() / cubeSize);
 
-  out_voxels.CubeSize = cubeSize;
-  out_voxels.Origin = meshInfo.Minimum;
-  RowVector3f origin = meshInfo.Minimum.cast<float>().transpose() + offset;
+  out_voxels.cubeSize = cubeSize;
+  out_voxels.origin = meshInfo.minimum;
+  RowVector3f origin = meshInfo.minimum.cast<float>().transpose() + offset;
 
   out_voxelCoords.clear();
   #pragma omp parallel
@@ -55,7 +56,7 @@ void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, int numDiv
   }
 }
 
-std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(const std::vector<Voxel>& voxelCoords) const
+std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(const std::vector<Voxel>& voxelCoords, double groundY) const
 {
   std::vector<Voxel> m_voxelCoords = voxelCoords;
 
@@ -71,7 +72,9 @@ std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(const std::vector<Voxe
   for (size_t i = 0; i < m_voxelCoords.size(); i++) {
     Voxel support = m_voxelCoords[i] - oneY;
     if (i == 0 || m_voxelCoords[i - 1] != support) {
-      result.push_back(support);
+      if (GetVoxelCenter<double>(support).y() > groundY) {
+        result.push_back(support);
+      }
     }
   }
   return result;
@@ -93,15 +96,13 @@ std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
   {
     std::vector<Voxel> t_result;
     Eigen::RowVector3f t_grabDirection = -grabDirection.transpose();
-    int num_rays;
-    vector<igl::Hit> hits;
+    igl::Hit hit;
 
     #pragma omp for
     for (ssize_t i = 0; i < numVoxels; i++) {
       RowVector3f position = GetVoxelCenter<float>(voxelCoords[i]).transpose();
-      intersector.intersectRay(position, t_grabDirection,
-        hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
-      if (hits.size() == 0) {
+      // TODO: check multiple rays
+      if (!intersector.intersectRay(position, t_grabDirection, hit)) {
         t_result.push_back(voxelCoords[i]);
       }
     }
@@ -114,40 +115,16 @@ std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
 
 void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords, float voxelBoxSizeScale,
     MatrixXd& out_V, MatrixXi& out_F) const {
-  // Inline mesh of a cube
-  static const MatrixXd cube_V = (MatrixXd(8, 3) <<
-    0.0, 0.0, 0.0,
-    0.0, 0.0, 1.0,
-    0.0, 1.0, 0.0,
-    0.0, 1.0, 1.0,
-    1.0, 0.0, 0.0,
-    1.0, 0.0, 1.0,
-    1.0, 1.0, 0.0,
-    1.0, 1.0, 1.0).finished();
-  static const MatrixXi cube_F = (MatrixXi(12, 3) <<
-    1, 7, 5,
-    1, 3, 7,
-    1, 4, 3,
-    1, 2, 4,
-    3, 8, 7,
-    3, 4, 8,
-    5, 7, 8,
-    5, 8, 6,
-    1, 5, 6,
-    1, 6, 2,
-    2, 6, 8,
-    2, 8, 4).finished().array() - 1;
-
   ssize_t numVoxels = voxelCoords.size();
 
   out_V.resize(8 * numVoxels, 3);
   out_F.resize(12 * numVoxels, 3);
 
-  Eigen::Vector3d offset = Eigen::Vector3d::Constant(CubeSize * voxelBoxSizeScale * 0.5);
+  Eigen::Vector3d offset = Eigen::Vector3d::Constant(cubeSize * voxelBoxSizeScale * 0.5);
 
   #pragma omp parallel for
   for (ssize_t i = 0; i < numVoxels; i++) {
-    out_V.block<8, 3>(8 * i, 0) = cube_V * (CubeSize * voxelBoxSizeScale) +
+    out_V.block<8, 3>(8 * i, 0) = cube_V * (cubeSize * voxelBoxSizeScale) +
       (GetVoxelCenter<double>(voxelCoords[i]) - offset).transpose().replicate<8, 1>();
     out_F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
@@ -163,7 +140,6 @@ void Voxels::GeneratePoints(const std::vector<Voxel>& voxelCoords, MatrixXd& out
     out_P.row(i) = GetVoxelCenter<double>(voxelCoords[i]);
   }
 }
-
 
 Voxels::VoxelD Voxels::GetCenterOfMass(const std::vector<Voxel>& voxelCoords) const {
   size_t numVoxels = voxelCoords.size();

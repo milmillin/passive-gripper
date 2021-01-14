@@ -6,6 +6,7 @@
 #include "MainUI.h"
 #include "Voxels.h"
 #include "VoxelPipelineSettings.h"
+#include "Gripper.h"
 
 namespace gripper {
 
@@ -24,6 +25,7 @@ private:
 
   Eigen::MatrixXd m_mesh_V;
   Eigen::MatrixXi m_mesh_F;
+  MeshInfo m_meshInfo;
 
   Voxels m_voxels;
   Voxels::VoxelD m_centerOfMass;
@@ -47,6 +49,8 @@ private:
   Eigen::MatrixXd m_best_V;
   Eigen::MatrixXi m_best_F;
   Eigen::MatrixXd m_best_P;
+
+  Gripper m_gripper;
 };
 
 }

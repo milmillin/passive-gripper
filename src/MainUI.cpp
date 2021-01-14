@@ -79,7 +79,7 @@ void MainUI::draw_viewer_menu()
       ImGui::Text("Size: (%.2lf, %.2lf, %.2lf)",
         meshInfo.Size.x(), meshInfo.Size.y(), meshInfo.Size.z());
       ImGui::Separator();
-        
+
       ImGui::PushItemWidth(120.f);
       ImGui::InputInt("# of Division", &voxelSettings.numDivision, 1, 10);
       if (ImGui::DragFloat2("Grab angle", voxelSettings.grabAngle.data(), 1.f, -360.f, 360.f)) {
@@ -116,6 +116,44 @@ void MainUI::draw_viewer_menu()
 
     ImGui::PopID();
   }
+
+  if (ImGui::CollapsingHeader("New Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::PushID("NewMetric");
+    ImGui::DragFloat3("p1", supportPoints[0].data());
+    ImGui::DragFloat3("d1", supportDirections[0].data());
+    ImGui::DragFloat3("p2", supportPoints[1].data());
+    ImGui::DragFloat3("d2", supportDirections[1].data());
+    ImGui::DragFloat3("p3", supportPoints[2].data());
+    ImGui::DragFloat3("d3", supportDirections[2].data());
+    ImGui::DragFloat3("center", center.data());
+    ImGui::DragFloat("Point Size", &(viewer->data(LayerId::NewMetricTest).point_size));
+    ImGui::DragFloat("Line Width", &(viewer->data(LayerId::NewMetricTest).line_width));
+    if (ImGui::Button("Evaluate"))
+      evaluateNewMetric();
+
+    ImGui::PopID();
+  }
+}
+
+void MainUI::evaluateNewMetric() {
+  for (auto &p : supportDirections)
+    p.normalize();
+
+  auto &layer = viewer->data(LayerId::Mesh);
+  layer.clear();
+
+  layer.add_points(center.transpose().cast<double>(), Eigen::RowVector3d(1, 1, 1));
+  for (const auto &p : supportPoints)
+    layer.add_points(p.transpose().cast<double>(), Eigen::RowVector3d(1, 1, 1));
+
+  MatrixXd V(6, 3);
+  MatrixXi E(3, 2);
+  E << 0, 1, 2, 3, 4, 5;
+  for (int i = 0; i < 3; i++) {
+    V.row(i*2) = supportPoints[i].cast<double>().transpose();
+    V.row(i*2 + 1) = (supportPoints[i] + supportDirections[i]).cast<double>().transpose();
+  }
+  layer.set_edges(V, E, Eigen::RowVector3d(1, 1, 1));
 }
 
 void MainUI::UpdateVoxels()
@@ -125,7 +163,7 @@ void MainUI::UpdateVoxels()
     voxelPipeline.reset(new VoxelPipeline(this, GetMeshVertices(), GetMeshFaces()));
     isInit = true;
   }
-  
+
   // Update using new thread
   auto done = new std::atomic<bool>(false);
   auto task = new std::thread([=] {

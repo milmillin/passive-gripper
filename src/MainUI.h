@@ -23,6 +23,7 @@ enum LayerId {
   VoxelSupporting,
   VoxelFiltered,
   VoxelBest,
+  NewMetricTest,
   Max
 };
 
@@ -39,7 +40,7 @@ public:
   bool post_load() override;
   inline bool pre_draw() override;
   inline bool post_draw() override;
-  
+
   std::mutex viewerDataMutex;
   inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) { return viewer->data(layerId); }
 private:
@@ -56,6 +57,12 @@ private:
   // VoxelPipeline
   std::unique_ptr<VoxelPipeline> voxelPipeline;
   VoxelPipelineSettings voxelSettings;
+
+  Vector3f supportPoints[3];
+  Vector3f supportDirections[3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
+  Vector3f center;
+
+  void evaluateNewMetric();
 
   // Task
   std::deque<std::pair<std::unique_ptr<std::atomic<bool>>, std::unique_ptr<std::thread>>> tasks;

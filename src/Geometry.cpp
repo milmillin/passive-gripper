@@ -97,4 +97,26 @@ Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
   return Eigen::Vector3f(cosA * cosB, sinB, sinA * cosB);
 }
 
+inline double distance(double x, double y) {
+  return std::sqrt(x * x + y * y);
+}
+
+bool IsSupportPointStable(const Vector3d &center, const Eigen::Matrix3d &rotation,
+    double threshold,
+    const vector<Vector3d> &p, const vector<Vector3d> &dir) {
+  assert(dir.size() == 3 && p.size() == 3);
+  assert(threshold >= -0.0);
+
+  for (size_t i = 0; i < dir.size(); i++) {
+    Vector3d newDir = rotation * dir[i];
+    if (std::atan2(newDir(1), distance(newDir(0), newDir(2))) < threshold)
+      return false;
+  }
+
+  vector<Vector3d> newP;
+  for (const auto &point : p)
+    newP.push_back(rotation * point);
+  return IsSupportPointStable(rotation * center, newP[0], newP[1], newP[2]);
+}
+
 }  // namespace gripper

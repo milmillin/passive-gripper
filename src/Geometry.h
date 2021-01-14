@@ -49,4 +49,8 @@ Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
 
 std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>& voxelCoords, const Voxels::VoxelD& centerOfMass);
 
+bool IsSupportPointStable(const Vector3d &center, const Eigen::Matrix3d &rotation,
+    double threshold,
+    const vector<Vector3d> &p, const vector<Vector3d> &dir);
+
 }  // namespace gripper

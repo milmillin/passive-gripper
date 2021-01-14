@@ -58,9 +58,15 @@ private:
   std::unique_ptr<VoxelPipeline> voxelPipeline;
   VoxelPipelineSettings voxelSettings;
 
-  Vector3f supportPoints[3];
+  Vector3f supportPoints[3] = {{2, 0, 0}, {0, 0, 2}, {-2, 0, -2}};
   Vector3f supportDirections[3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
-  Vector3f center;
+  Vector3f center = {0, 5, 0};
+  int pitchDivision = 16;
+  int yarnDivision = 16;
+  float threshold = 0.05;
+  double stability = 0;
+  double minStablePitch = 0;
+  std::chrono::nanoseconds calculationTime;
 
   void evaluateNewMetric();
 

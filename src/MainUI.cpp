@@ -1,5 +1,7 @@
 #include "MainUI.h"
 
+#include <chrono>
+
 #include "Geometry.h"
 
 namespace gripper {
@@ -119,18 +121,34 @@ void MainUI::draw_viewer_menu()
 
   if (ImGui::CollapsingHeader("New Metric", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("NewMetric");
+
     ImGui::DragFloat3("p1", supportPoints[0].data());
-    ImGui::DragFloat3("d1", supportDirections[0].data());
     ImGui::DragFloat3("p2", supportPoints[1].data());
-    ImGui::DragFloat3("d2", supportDirections[1].data());
     ImGui::DragFloat3("p3", supportPoints[2].data());
+    ImGui::Separator();
+
+    ImGui::DragFloat3("d1", supportDirections[0].data());
+    ImGui::DragFloat3("d2", supportDirections[1].data());
     ImGui::DragFloat3("d3", supportDirections[2].data());
+    ImGui::Separator();
+
     ImGui::DragFloat3("center", center.data());
+    ImGui::Separator();
+
+    ImGui::DragInt("Pitch Divisions", &pitchDivision);
+    ImGui::DragInt("Yarn Divisions", &yarnDivision);
+    ImGui::DragFloat("Threshold", &threshold);
+    ImGui::Separator();
+
     ImGui::DragFloat("Point Size", &(viewer->data(LayerId::NewMetricTest).point_size));
     ImGui::DragFloat("Line Width", &(viewer->data(LayerId::NewMetricTest).line_width));
     if (ImGui::Button("Evaluate"))
       evaluateNewMetric();
+    ImGui::Separator();
 
+    ImGui::Text("Stability: %f", stability);
+    ImGui::Text("Min Stable Angle: %f", minStablePitch);
+    ImGui::Text("Time: %fms", calculationTime.count() / 1e6);
     ImGui::PopID();
   }
 }
@@ -139,7 +157,7 @@ void MainUI::evaluateNewMetric() {
   for (auto &p : supportDirections)
     p.normalize();
 
-  auto &layer = viewer->data(LayerId::Mesh);
+  auto &layer = viewer->data(LayerId::NewMetricTest);
   layer.clear();
 
   layer.add_points(center.transpose().cast<double>(), Eigen::RowVector3d(1, 1, 1));
@@ -154,6 +172,49 @@ void MainUI::evaluateNewMetric() {
     V.row(i*2 + 1) = (supportPoints[i] + supportDirections[i]).cast<double>().transpose();
   }
   layer.set_edges(V, E, Eigen::RowVector3d(1, 1, 1));
+
+  vector<Vector3d> newP;
+  vector<Vector3d> newDir;
+  for (const auto &p : supportPoints)
+    newP.push_back(p.cast<double>());
+  for (const auto &dir : supportDirections)
+    newDir.push_back(dir.cast<double>());
+
+
+  vector<Vector3d> directions;
+  size_t totalCount = 0;
+  size_t validCount = 0;
+  auto startTime = std::chrono::high_resolution_clock().now();
+  minStablePitch = EIGEN_PI / 2;
+  for (int pitchStep = 0; pitchStep <= pitchDivision; pitchStep++) {
+    double pitch = EIGEN_PI / 2 * pitchStep / pitchDivision;
+    Eigen::Matrix3d rotatePitch = Eigen::AngleAxisd(pitch, Vector3d::UnitX()).matrix();
+
+    for (int yarnStep = 0; yarnStep <= yarnDivision; yarnStep++) {
+      double yarn = 2 * EIGEN_PI * yarnStep / yarnDivision;
+      Eigen::Matrix3d rotateYarn = Eigen::AngleAxisd(yarn, Vector3d::UnitY()).matrix();
+      Eigen::Matrix3d rotation = rotateYarn * rotatePitch;
+
+      Vector3d dir = rotation * -Vector3d::UnitY();
+
+      if (IsSupportPointStable(center.cast<double>(), rotation.transpose(), threshold,
+          newP, newDir)) {
+        directions.push_back(center.cast<double>() + dir);
+        validCount++;
+      } else {
+        minStablePitch = std::min(minStablePitch, pitch);
+      }
+      totalCount++;
+    }
+  }
+  auto endTime = std::chrono::high_resolution_clock().now();
+  calculationTime = std::chrono::nanoseconds(endTime - startTime);
+
+  V.resize(directions.size(), 3);
+  for (int i = 0; i < directions.size(); i++)
+    V.row(i) = directions[i].transpose();
+  layer.add_points(V, Eigen::RowVector3d(0.8, 0.8, 0.8));
+  stability = (double) validCount / totalCount;
 }
 
 void MainUI::UpdateVoxels()

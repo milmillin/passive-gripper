@@ -1,18 +1,20 @@
 #include "Voxels.h"
 
+#include <omp.h>
 #include <Eigen/Core>
 #include <vector>
-#include <omp.h>
 
+#include "Geometry.h"
 #include "MeshInfo.h"
 #include "Utils.h"
-#include "Geometry.h"
 
 namespace gripper {
 
-void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, double voxelSize,
-    Voxels& out_voxels, std::vector<Voxel>& out_voxelCoords)
-{
+void Voxels::Voxelize(const MatrixXd& mesh_V,
+                      const MatrixXi& mesh_F,
+                      double voxelSize,
+                      Voxels& out_voxels,
+                      std::vector<Voxel>& out_voxelCoords) {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(mesh_V.cast<float>(), mesh_F, true);
 
@@ -31,18 +33,25 @@ void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, double vox
   RowVector3f origin = meshInfo.minimum.cast<float>().transpose() + offset;
 
   out_voxelCoords.clear();
-  #pragma omp parallel
+#pragma omp parallel
   {
     vector<Voxel> t_voxelCoords;
     vector<igl::Hit> hits;
     int num_rays = 0;
 
-    #pragma omp for
+#pragma omp for
     for (ssize_t i = 0; i < nX; i++) {
       for (ssize_t j = 0; j < nY; j++) {
         for (ssize_t k = 0; k < nZ; k++) {
-          RowVector3f position = out_voxels.GetVoxelCenter<float>(Voxel(i, j, k)).transpose();
-          intersector.intersectRay(position, direction, hits, num_rays, 0.f, std::numeric_limits<float>::infinity(), -1);
+          RowVector3f position =
+              out_voxels.GetVoxelCenter<float>(Voxel(i, j, k)).transpose();
+          intersector.intersectRay(position,
+                                   direction,
+                                   hits,
+                                   num_rays,
+                                   0.f,
+                                   std::numeric_limits<float>::infinity(),
+                                   -1);
           if (hits.size() % 2 == 1) {
             t_voxelCoords.push_back(Voxel(i, j, k));
           }
@@ -50,21 +59,27 @@ void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, double vox
       }
     }
 
-    #pragma omp critical
-    out_voxelCoords.insert(out_voxelCoords.end(), t_voxelCoords.begin(), t_voxelCoords.end());
+#pragma omp critical
+    out_voxelCoords.insert(
+        out_voxelCoords.end(), t_voxelCoords.begin(), t_voxelCoords.end());
   }
 }
 
-std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(const std::vector<Voxel>& voxelCoords, double groundY) const
-{
+std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(
+    const std::vector<Voxel>& voxelCoords,
+    double groundY) const {
   std::vector<Voxel> m_voxelCoords = voxelCoords;
 
   // Sort by x, z, y
-  std::sort(m_voxelCoords.begin(), m_voxelCoords.end(), [](const Voxel& a, const Voxel& b)->bool {
-    if (a(0) != b(0)) return a(0) < b(0);
-    if (a(2) != b(2)) return a(2) < b(2);
-    return a(1) < b(1);
-    });
+  std::sort(m_voxelCoords.begin(),
+            m_voxelCoords.end(),
+            [](const Voxel& a, const Voxel& b) -> bool {
+              if (a(0) != b(0))
+                return a(0) < b(0);
+              if (a(2) != b(2))
+                return a(2) < b(2);
+              return a(1) < b(1);
+            });
 
   std::vector<Voxel> result;
   Voxel oneY(0, 1, 0);
@@ -80,24 +95,23 @@ std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(const std::vector<Voxe
 }
 
 std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
-  const std::vector<Voxel>& voxelCoords,
-  const MatrixXd& mesh_V,
-  const MatrixXi& mesh_F,
-  Vector3f grabDirection) const
-{
+    const std::vector<Voxel>& voxelCoords,
+    const MatrixXd& mesh_V,
+    const MatrixXi& mesh_F,
+    Vector3f grabDirection) const {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(mesh_V.cast<float>(), mesh_F, true);
 
   std::vector<Voxel> result;
   ssize_t numVoxels = voxelCoords.size();
 
-  #pragma omp parallel
+#pragma omp parallel
   {
     std::vector<Voxel> t_result;
     Eigen::RowVector3f t_grabDirection = -grabDirection.transpose();
     igl::Hit hit;
 
-    #pragma omp for
+#pragma omp for
     for (ssize_t i = 0; i < numVoxels; i++) {
       RowVector3f position = GetVoxelCenter<float>(voxelCoords[i]).transpose();
       // TODO: check multiple rays
@@ -106,46 +120,54 @@ std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
       }
     }
 
-    #pragma omp critical
+#pragma omp critical
     result.insert(result.end(), t_result.begin(), t_result.end());
   }
   return result;
 }
 
-void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords, float voxelBoxSizeScale,
-    MatrixXd& out_V, MatrixXi& out_F) const {
+void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords,
+                          float voxelBoxSizeScale,
+                          MatrixXd& out_V,
+                          MatrixXi& out_F) const {
   ssize_t numVoxels = voxelCoords.size();
 
   out_V.resize(8 * numVoxels, 3);
   out_F.resize(12 * numVoxels, 3);
 
-  Eigen::Vector3d offset = Eigen::Vector3d::Constant(cubeSize * voxelBoxSizeScale * 0.5);
+  Eigen::Vector3d offset =
+      Eigen::Vector3d::Constant(cubeSize * voxelBoxSizeScale * 0.5);
 
-  #pragma omp parallel for
+#pragma omp parallel for
   for (ssize_t i = 0; i < numVoxels; i++) {
-    out_V.block<8, 3>(8 * i, 0) = cube_V * (cubeSize * voxelBoxSizeScale) +
-      (GetVoxelCenter<double>(voxelCoords[i]) - offset).transpose().replicate<8, 1>();
+    out_V.block<8, 3>(8 * i, 0) =
+        cube_V * (cubeSize * voxelBoxSizeScale) +
+        (GetVoxelCenter<double>(voxelCoords[i]) - offset)
+            .transpose()
+            .replicate<8, 1>();
     out_F.block<12, 3>(12 * i, 0) = cube_F.array() + 8 * i;
   }
 }
 
-void Voxels::GeneratePoints(const std::vector<Voxel>& voxelCoords, MatrixXd& out_P) const {
+void Voxels::GeneratePoints(const std::vector<Voxel>& voxelCoords,
+                            MatrixXd& out_P) const {
   ssize_t numVoxels = voxelCoords.size();
 
   out_P.resize(numVoxels, 3);
 
-  #pragma omp parallel for
+#pragma omp parallel for
   for (ssize_t i = 0; i < numVoxels; i++) {
     out_P.row(i) = GetVoxelCenter<double>(voxelCoords[i]);
   }
 }
 
-Voxels::VoxelD Voxels::GetCenterOfMass(const std::vector<Voxel>& voxelCoords) const {
+Voxels::VoxelD Voxels::GetCenterOfMass(
+    const std::vector<Voxel>& voxelCoords) const {
   size_t numVoxels = voxelCoords.size();
 
   double x = 0, y = 0, z = 0;
 
-  #pragma omp parallel for reduction(+:x,y,z)
+#pragma omp parallel for reduction(+ : x, y, z)
   for (ssize_t i = 0; i < numVoxels; i++) {
     x += voxelCoords[i](0);
     y += voxelCoords[i](1);

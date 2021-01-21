@@ -7,7 +7,7 @@ struct VoxelPipelineSettings {
   double voxelSize = 0.005;
 
   // Filter Voxel Settings
-  Eigen::Vector2f grabAngle = Eigen::Vector2f(0, 0); // In degrees
+  Eigen::Vector2f grabAngle = Eigen::Vector2f(0, 0);  // In degrees
 
   // Rod Diameter
   double rodDiameter = 0.011;
@@ -20,4 +20,4 @@ struct VoxelPipelineSettings {
   float voxelScale = 0.5f;
 };
 
-}
+}  // namespace gripper

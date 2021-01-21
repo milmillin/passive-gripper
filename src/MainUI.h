@@ -4,16 +4,16 @@
 #include <Eigen/Core>
 
 #include "MeshInfo.h"
-#include "Voxels.h"
 #include "VoxelPipeline.h"
 #include "VoxelPipelineSettings.h"
+#include "Voxels.h"
 
-#include <mutex>
-#include <vector>
-#include <queue>
 #include <atomic>
-#include <thread>
 #include <memory>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <vector>
 
 namespace gripper {
 
@@ -31,7 +31,7 @@ enum LayerId {
 class VoxelPipeline;
 
 class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
-public:
+ public:
   MainUI();
   ~MainUI();
 
@@ -41,15 +41,22 @@ public:
   bool post_load() override;
   inline bool pre_draw() override;
   inline bool post_draw() override;
-  
+
   std::mutex viewerDataMutex;
-  inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) { return viewer->data(layerId); }
-private:
+  inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) {
+    return viewer->data(layerId);
+  }
+
+ private:
   void UpdateVoxels();
   void DrawGrabDirection();
 
-  inline Eigen::MatrixXd& GetMeshVertices() { return viewer->data(LayerId::Mesh).V; }
-  inline Eigen::MatrixXi& GetMeshFaces() { return viewer->data(LayerId::Mesh).F; }
+  inline Eigen::MatrixXd& GetMeshVertices() {
+    return viewer->data(LayerId::Mesh).V;
+  }
+  inline Eigen::MatrixXi& GetMeshFaces() {
+    return viewer->data(LayerId::Mesh).F;
+  }
 
   // Mesh
   bool meshLoaded;
@@ -60,7 +67,9 @@ private:
   VoxelPipelineSettings voxelSettings;
 
   // Task
-  std::deque<std::pair<std::unique_ptr<std::atomic<bool>>, std::unique_ptr<std::thread>>> tasks;
+  std::deque<std::pair<std::unique_ptr<std::atomic<bool>>,
+                       std::unique_ptr<std::thread>>>
+      tasks;
 };
 
-}
+}  // namespace gripper

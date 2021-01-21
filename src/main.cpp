@@ -6,8 +6,7 @@
 
 using namespace gripper;
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
   std::cout << "Num Threads: " << Eigen::nbThreads() << std::endl;
 
   igl::opengl::glfw::Viewer viewer;

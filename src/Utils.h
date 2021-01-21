@@ -12,4 +12,4 @@ inline string error(string message, string file, unsigned line) {
 
 #define ERROR_MESSAGE(message) utils::error(message, __FILE__, __LINE__)
 
-}
+}  // namespace utils

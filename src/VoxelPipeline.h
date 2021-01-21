@@ -3,22 +3,26 @@
 #include <Eigen/Core>
 #include <atomic>
 
-#include "MainUI.h"
-#include "Voxels.h"
-#include "VoxelPipelineSettings.h"
 #include "Gripper.h"
+#include "MainUI.h"
+#include "VoxelPipelineSettings.h"
+#include "Voxels.h"
 
 namespace gripper {
 
 class MainUI;
 
 class VoxelPipeline {
-public:
-  VoxelPipeline(MainUI* mainUI, const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F);
+ public:
+  VoxelPipeline(MainUI* mainUI,
+                const Eigen::MatrixXd& mesh_V,
+                const Eigen::MatrixXi& mesh_F);
 
-  void UpdateSettings(const VoxelPipelineSettings& settings, bool isInit = false);
+  void UpdateSettings(const VoxelPipelineSettings& settings,
+                      bool isInit = false);
   inline bool IsReady() { return m_isReady; }
-private:
+
+ private:
   MainUI* m_mainUI;
   std::atomic<bool> m_isReady;
   VoxelPipelineSettings m_settings;
@@ -57,4 +61,4 @@ private:
   Gripper m_gripper;
 };
 
-}
+}  // namespace gripper

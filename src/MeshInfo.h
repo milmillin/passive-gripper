@@ -13,4 +13,4 @@ struct MeshInfo {
   MeshInfo(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
 };
 
-}
+}  // namespace gripper

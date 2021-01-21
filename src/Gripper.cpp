@@ -2,18 +2,19 @@
 
 #include <Eigen/Geometry>
 
-#include "MeshInfo.h"
 #include "Geometry.h"
+#include "MeshInfo.h"
 
 namespace gripper {
 
 const float ANGLE_TO_RADIAN = EIGEN_PI / 180;
 
-Gripper::Gripper(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F,
-  const std::vector<Eigen::Vector3d>& contactPoints, double rodDiameter,
-  const Eigen::Vector2f& grabAngle) :
-  m_grabAngle(grabAngle * ANGLE_TO_RADIAN)
-{
+Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
+                 const Eigen::MatrixXi& mesh_F,
+                 const std::vector<Eigen::Vector3d>& contactPoints,
+                 double rodDiameter,
+                 const Eigen::Vector2f& grabAngle)
+    : m_grabAngle(grabAngle * ANGLE_TO_RADIAN) {
   Eigen::Affine3d t = Eigen::Affine3d::Identity();
   t.rotate(Eigen::AngleAxisd(-m_grabAngle(0), Eigen::Vector3d::UnitY()));
   t.rotate(Eigen::AngleAxisd(m_grabAngle(1), Eigen::Vector3d::UnitZ()));
@@ -34,25 +35,20 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F,
 
   // Generate backplate
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
-    Eigen::Vector3d(info.maximum.x(), info.minimum.y(), info.minimum.z()),
-    // TODO: Check backplate thickness
-    Eigen::Vector3d(0.02, info.size.y(), info.size.z())
-  );
+      Eigen::Vector3d(info.maximum.x(), info.minimum.y(), info.minimum.z()),
+      // TODO: Check backplate thickness
+      Eigen::Vector3d(0.02, info.size.y(), info.size.z()));
   gripper_F.block<12, 3>(0, 0) = cube_F;
 
   // Generate rods
   for (size_t i = 0; i < contactPoints.size(); i++) {
     Vector3d contactPosition = tInverse * contactPoints[i];
     gripper_V.block<8, 3>((i + 1) * 8, 0) = GenerateCubeV(
-      Eigen::Vector3d(
-        info.maximum.x(),
-        contactPosition.y() - rodDiameter / 2,
-        contactPosition.z() - rodDiameter / 2),
-      Eigen::Vector3d(
-        contactPosition.x() - info.maximum.x(),
-        rodDiameter,
-        rodDiameter)
-    );
+        Eigen::Vector3d(info.maximum.x(),
+                        contactPosition.y() - rodDiameter / 2,
+                        contactPosition.z() - rodDiameter / 2),
+        Eigen::Vector3d(
+            contactPosition.x() - info.maximum.x(), rodDiameter, rodDiameter));
     gripper_F.block<12, 3>((i + 1) * 12, 0) = cube_F.array() + (i + 1) * 8;
   }
 
@@ -63,7 +59,6 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F,
   }
 }
 
-Gripper::Gripper()
-{ }
+Gripper::Gripper() {}
 
-}
+}  // namespace gripper

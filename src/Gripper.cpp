@@ -30,8 +30,8 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
 
   MeshInfo info(rotated_V, mesh_F);
 
-  gripper_V.resize(8 * (1 + contactPoints.size()), 3);
-  gripper_F.resize(12 * (1 + contactPoints.size()), 3);
+  gripper_V.resize(8 + cylinderNumV * contactPoints.size(), 3);
+  gripper_F.resize(12 + cylinderNumF * contactPoints.size(), 3);
 
   // Generate backplate
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
@@ -43,13 +43,12 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
   // Generate rods
   for (size_t i = 0; i < contactPoints.size(); i++) {
     Vector3d contactPosition = tInverse * contactPoints[i];
-    gripper_V.block<8, 3>((i + 1) * 8, 0) = GenerateCubeV(
-        Eigen::Vector3d(info.maximum.x(),
-                        contactPosition.y() - rodDiameter / 2,
-                        contactPosition.z() - rodDiameter / 2),
-        Eigen::Vector3d(
-            contactPosition.x() - info.maximum.x(), rodDiameter, rodDiameter));
-    gripper_F.block<12, 3>((i + 1) * 12, 0) = cube_F.array() + (i + 1) * 8;
+    Vector3d origin(info.maximum.x(), contactPosition.y(), contactPosition.z());
+
+    gripper_V.block<cylinderNumV, 3>(8 + i * cylinderNumV, 0) =
+        GenerateCylinderV(origin, contactPosition, rodDiameter / 2);
+    gripper_F.block<cylinderNumF, 3>(12 + i * cylinderNumF, 0) =
+        cylinder_F.array() + (8 + i * cylinderNumV);
   }
 
   // Rotate back

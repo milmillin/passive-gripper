@@ -2,6 +2,7 @@
 
 #include <omp.h>
 #include <Eigen/Core>
+#include <iostream>
 #include <vector>
 
 #include "Geometry.h"
@@ -15,8 +16,9 @@ void Voxels::Voxelize(const MatrixXd& mesh_V,
                       double voxelSize,
                       Voxels& out_voxels,
                       std::vector<Voxel>& out_voxelCoords) {
-  igl::embree::EmbreeIntersector intersector;
-  intersector.init(mesh_V.cast<float>(), mesh_F, true);
+  out_voxels.m_intersector.init(mesh_V.cast<float>(), mesh_F, true);
+  out_voxels.m_mesh_V = mesh_V;
+  out_voxels.m_mesh_F = mesh_F;
 
   MeshInfo meshInfo(mesh_V, mesh_F);
   double cubeSize = voxelSize;
@@ -45,13 +47,14 @@ void Voxels::Voxelize(const MatrixXd& mesh_V,
         for (ssize_t k = 0; k < nZ; k++) {
           RowVector3f position =
               out_voxels.GetVoxelCenter<float>(Voxel(i, j, k)).transpose();
-          intersector.intersectRay(position,
-                                   direction,
-                                   hits,
-                                   num_rays,
-                                   0.f,
-                                   std::numeric_limits<float>::infinity(),
-                                   -1);
+          out_voxels.m_intersector.intersectRay(
+              position,
+              direction,
+              hits,
+              num_rays,
+              0.f,
+              std::numeric_limits<float>::infinity(),
+              -1);
           if (hits.size() % 2 == 1) {
             t_voxelCoords.push_back(Voxel(i, j, k));
           }
@@ -66,6 +69,8 @@ void Voxels::Voxelize(const MatrixXd& mesh_V,
 }
 
 std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(
+    const Eigen::MatrixXd& mesh_V,
+    const Eigen::MatrixXi& mesh_F,
     const std::vector<Voxel>& voxelCoords,
     double groundY) const {
   std::vector<Voxel> m_voxelCoords = voxelCoords;
@@ -74,20 +79,32 @@ std::vector<Voxels::Voxel> Voxels::FilterSupportingVoxels(
   std::sort(m_voxelCoords.begin(),
             m_voxelCoords.end(),
             [](const Voxel& a, const Voxel& b) -> bool {
-              if (a(0) != b(0))
-                return a(0) < b(0);
-              if (a(2) != b(2))
-                return a(2) < b(2);
+              if (a(0) != b(0)) return a(0) < b(0);
+              if (a(2) != b(2)) return a(2) < b(2);
               return a(1) < b(1);
             });
+
+  igl::embree::EmbreeIntersector intersector;
+  intersector.init(mesh_V.cast<float>(), mesh_F, true);
+  Eigen::RowVector3f rayDirection = Eigen::RowVector3f::UnitY();
 
   std::vector<Voxel> result;
   Voxel oneY(0, 1, 0);
   for (size_t i = 0; i < m_voxelCoords.size(); i++) {
     Voxel support = m_voxelCoords[i] - oneY;
+    Eigen::RowVector3f supportPos = GetVoxelCenter<float>(support).transpose();
+    igl::Hit hit;
     if (i == 0 || m_voxelCoords[i - 1] != support) {
-      if (GetVoxelCenter<double>(support).y() > groundY) {
-        result.push_back(support);
+      if (supportPos.y() > groundY) {
+        if (intersector.intersectRay(supportPos, rayDirection, hit)) {
+          Vector3d normal = ComputeNormal(mesh_V.row(mesh_F(hit.id, 0)),
+                                          mesh_V.row(mesh_F(hit.id, 1)),
+                                          mesh_V.row(mesh_F(hit.id, 2)));
+          // Only consider downward facing faces (45 degrees)
+          if (abs(normal.y()) > cos(EIGEN_PI / 4)) {
+            result.push_back(support);
+          }
+        }
       }
     }
   }
@@ -126,7 +143,51 @@ std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
   return result;
 }
 
-void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords,
+std::vector<Voxels::VoxelD> Voxels::GetSupportCandidates(
+    std::vector<Voxel> voxelCoords,
+    Vector3f grabDirection,
+    double groundY) const {
+  // Sort by x, z, y
+  std::sort(voxelCoords.begin(),
+            voxelCoords.end(),
+            [](const Voxel& a, const Voxel& b) -> bool {
+              if (a(0) != b(0)) return a(0) < b(0);
+              if (a(2) != b(2)) return a(2) < b(2);
+              return a(1) < b(1);
+            });
+
+  Eigen::RowVector3f upRay = Eigen::RowVector3f::UnitY();
+  Eigen::RowVector3f grabRay = -grabDirection.transpose();
+  Voxel oneY(0, 1, 0);
+
+  std::vector<Voxels::VoxelD> result;
+  for (size_t i = 0; i < voxelCoords.size(); i++) {
+    Voxel support = voxelCoords[i] - oneY;
+    Eigen::RowVector3f supportPos = GetVoxelCenter<float>(support).transpose();
+    igl::Hit hit;
+    if (i != 0 && voxelCoords[i - 1] == support) continue;
+    if (supportPos.y() <= groundY) continue;
+    if (!m_intersector.intersectRay(supportPos, upRay, hit)) continue;
+
+    Vector3d normal = ComputeNormal(m_mesh_V.row(m_mesh_F(hit.id, 0)),
+                                    m_mesh_V.row(m_mesh_F(hit.id, 1)),
+                                    m_mesh_V.row(m_mesh_F(hit.id, 2)));
+
+    // Only consider downward facing faces (45 degrees)
+    if (abs(normal.y()) <= cos(EIGEN_PI / 4)) continue;
+
+    Eigen::Vector3f contactPos = supportPos + upRay * (hit.t - 0.0001f);
+
+    // Filter Grab Direction
+    if (m_intersector.intersectRay(contactPos, grabRay, hit)) continue;
+    result.push_back(((contactPos.cast<double>() - origin) / cubeSize).array() -
+                     0.5);
+  }
+  return result;
+}
+
+template<typename T>
+void Voxels::GenerateMesh(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
                           float voxelBoxSizeScale,
                           MatrixXd& out_V,
                           MatrixXi& out_F) const {
@@ -149,7 +210,8 @@ void Voxels::GenerateMesh(const std::vector<Voxel>& voxelCoords,
   }
 }
 
-void Voxels::GeneratePoints(const std::vector<Voxel>& voxelCoords,
+template<typename T>
+void Voxels::GeneratePoints(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
                             MatrixXd& out_P) const {
   ssize_t numVoxels = voxelCoords.size();
 

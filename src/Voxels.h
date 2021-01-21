@@ -5,6 +5,7 @@
 #include <embree/common/sys/platform.h>
 #include <Eigen/Core>
 
+#include <igl/embree/EmbreeIntersector.h>
 #include "Utils.h"
 
 namespace gripper {
@@ -27,20 +28,32 @@ class Voxels {
                        Voxels& out_voxels,
                        std::vector<Voxel>& out_voxelCoords);
 
-  void GenerateMesh(const std::vector<Voxel>& voxelCoords,
+  template <typename T>
+  void GenerateMesh(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
                     float voxelBoxSizeScale,
                     MatrixXd& out_V,
                     MatrixXi& out_F) const;
-  void GeneratePoints(const std::vector<Voxel>& voxelCoords,
+
+  template <typename T>
+  void GeneratePoints(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
                       MatrixXd& out_P) const;
 
+  // UNUSED
   std::vector<Voxel> FilterSupportingVoxels(
+      const Eigen::MatrixXd& mesh_V,
+      const Eigen::MatrixXi& mesh_F,
       const std::vector<Voxel>& voxelCoords,
       double groundY) const;
+
+  // UNUSED
   std::vector<Voxel> FilterGrabDirection(const std::vector<Voxel>& voxelCoords,
                                          const MatrixXd& mesh_V,
                                          const MatrixXi& mesh_F,
                                          Vector3f grabDirection) const;
+
+  std::vector<VoxelD> GetSupportCandidates(std::vector<Voxel> voxelCoords,
+                                           Vector3f grabDirection,
+                                           double groundY) const;
 
   template <typename T, typename U>
   inline Eigen::Matrix<T, 3, 1> GetVoxelCenter(
@@ -61,6 +74,29 @@ class Voxels {
 
   double cubeSize;
   Vector3d origin;
+
+ private:
+  igl::embree::EmbreeIntersector m_intersector;
+  Eigen::MatrixXd m_mesh_V;
+  Eigen::MatrixXi m_mesh_F;
 };
+
+template void Voxels::GenerateMesh(
+    const std::vector<Eigen::Matrix<ssize_t, 3, 1>>& voxelCoords,
+    float voxelBoxSizeScale,
+    MatrixXd& out_V,
+    MatrixXi& out_F) const;
+template void Voxels::GenerateMesh(
+    const std::vector<Eigen::Matrix<double, 3, 1>>& voxelCoords,
+    float voxelBoxSizeScale,
+    MatrixXd& out_V,
+    MatrixXi& out_F) const;
+
+template void Voxels::GeneratePoints(
+    const std::vector<Eigen::Matrix<ssize_t, 3, 1>>& voxelCoords,
+    MatrixXd& out_P) const;
+template void Voxels::GeneratePoints(
+    const std::vector<Eigen::Matrix<double, 3, 1>>& voxelCoords,
+    MatrixXd& out_P) const;
 
 }  // namespace gripper

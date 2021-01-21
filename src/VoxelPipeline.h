@@ -43,17 +43,12 @@ class VoxelPipeline {
   Eigen::MatrixXi m_all_F;
   Eigen::MatrixXd m_all_P;
 
-  std::vector<Voxels::Voxel> m_supportingCoords;
-  Eigen::MatrixXd m_supporting_V;
-  Eigen::MatrixXi m_supporting_F;
-  Eigen::MatrixXd m_supporting_P;
-
-  std::vector<Voxels::Voxel> m_filteredCoords;
+  std::vector<Voxels::VoxelD> m_filteredCoords;
   Eigen::MatrixXd m_filtered_V;
   Eigen::MatrixXi m_filtered_F;
   Eigen::MatrixXd m_filtered_P;
 
-  std::vector<Voxels::Voxel> m_bestCoords;
+  std::vector<Voxels::VoxelD> m_bestCoords;
   Eigen::MatrixXd m_best_V;
   Eigen::MatrixXi m_best_F;
   Eigen::MatrixXd m_best_P;

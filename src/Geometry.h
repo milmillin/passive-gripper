@@ -9,9 +9,14 @@
 
 namespace gripper {
 
+using Eigen::RowVector3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::set;
+
+Vector3d ComputeNormal(const RowVector3d& p1,
+                       const RowVector3d& p2,
+                       const RowVector3d& p3);
 
 // Test if the object is stable using the support points
 // p: center of mass for this object
@@ -32,16 +37,15 @@ double TriangleStability(const Vector3d& p,
 
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
 
-std::vector<Voxels::Voxel> FindBestContactDumb(
-    const std::vector<Voxels::Voxel>& voxelCoords,
+std::vector<Voxels::VoxelD> FindBestContactDumb(
+    const std::vector<Voxels::VoxelD>& voxelCoords,
     const Voxels::VoxelD& centerOfMass);
 
 std::vector<Eigen::Vector3d> RefineContactPoint(
     const Eigen::MatrixXd& mesh_V,
     const Eigen::MatrixXi& mesh_F,
     const Voxels& voxels,
-    const std::vector<Voxels::Voxel>& voxelCoords,
-    double rodDiameter);
+    const std::vector<Voxels::Voxel>& voxelCoords);
 
 // clang-format off
 // Inline mesh of a cube
@@ -70,5 +74,15 @@ const MatrixXi cube_F = (MatrixXi(12, 3) <<
 // clang-format on
 
 Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size);
+
+constexpr size_t cylinderSubdivision = 8;
+constexpr size_t cylinderNumV = cylinderSubdivision * 2;
+constexpr size_t cylinderNumF = 4 * cylinderSubdivision - 4;
+Eigen::MatrixXd GenerateCylinderV(Eigen::Vector3d p0,
+                                  Eigen::Vector3d p1,
+                                  double radius);
+Eigen::MatrixXi GenerateCylinderF();
+
+const MatrixXi cylinder_F = GenerateCylinderF();
 
 }  // namespace gripper

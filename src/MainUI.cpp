@@ -26,8 +26,14 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
 
   // Set default point size
   viewer->data_list[LayerId::VoxelAll].point_size = 3;
-  viewer->data_list[LayerId::VoxelSupporting].point_size = 3;
   viewer->data_list[LayerId::VoxelFiltered].point_size = 3;
+
+  // Set default
+  viewer->data_list[LayerId::Mesh].show_lines = false;
+  viewer->data_list[LayerId::Offset].show_lines = false;
+  viewer->data_list[LayerId::GripperMesh].show_lines = false;
+
+  viewer->core().orthographic = true;
 }
 
 void MainUI::draw_viewer_window() {
@@ -117,8 +123,7 @@ void MainUI::draw_viewer_menu() {
                           2,
                           "%.0f")) {
       viewer->data(LayerId::VoxelFiltered).point_size =
-          viewer->data(LayerId::VoxelSupporting).point_size =
-              viewer->data(LayerId::VoxelAll).point_size;
+          viewer->data(LayerId::VoxelAll).point_size;
     }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
@@ -126,9 +131,6 @@ void MainUI::draw_viewer_menu() {
                     (bool*)&(viewer->data(LayerId::Offset).is_visible));
     ImGui::Checkbox("Voxel",
                     (bool*)&(viewer->data(LayerId::VoxelAll).is_visible));
-    ImGui::Checkbox(
-        "Voxel Support",
-        (bool*)&(viewer->data(LayerId::VoxelSupporting).is_visible));
     ImGui::Checkbox("Voxel Filtered",
                     (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));
     ImGui::Checkbox("Voxel Best",

@@ -53,9 +53,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
                      m_voxels,
                      m_allCoords);
 
-    // Filter Supporting Voxels
-    m_supportingCoords =
-        m_voxels.FilterSupportingVoxels(m_allCoords, m_meshInfo.minimum.y());
+    // TODO: Use non-offset version instead
     // Calculate Center of Mass
     m_centerOfMass = m_voxels.GetCenterOfMass(m_allCoords);
 
@@ -65,8 +63,9 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   // Filter Grab Direction
   if (isInit || requireUpdate || settings.grabAngle != m_settings.grabAngle) {
     Eigen::Vector3f grabDirection = -GetDirectionFromAngle(settings.grabAngle);
-    m_filteredCoords = m_voxels.FilterGrabDirection(
-        m_supportingCoords, m_offset_mesh_V, m_offset_mesh_F, grabDirection);
+
+    m_filteredCoords = m_voxels.GetSupportCandidates(
+        m_allCoords, grabDirection, m_meshInfo.minimum.y());
 
     requireUpdate = true;
   }
@@ -80,8 +79,10 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     else
       m_bestCoords.clear();
 
-    std::vector<Eigen::Vector3d> contactPoints = RefineContactPoint(
-        m_mesh_V, m_mesh_F, m_voxels, m_bestCoords, settings.rodDiameter);
+    std::vector<Eigen::Vector3d> contactPoints;
+    for (const auto& p : m_bestCoords) {
+      contactPoints.push_back(m_voxels.GetVoxelCenter<double>(p));    
+    }
 
     // Generate Gripper
     m_gripper = Gripper(m_mesh_V,
@@ -96,7 +97,6 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   if (isInit || requireUpdate) {
     // Compute Points
     m_voxels.GeneratePoints(m_allCoords, m_all_P);
-    m_voxels.GeneratePoints(m_supportingCoords, m_supporting_P);
     m_voxels.GeneratePoints(m_filteredCoords, m_filtered_P);
     m_voxels.GeneratePoints(m_bestCoords, m_best_P);
   }
@@ -104,10 +104,6 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   // Compute Mesh
   if (isInit || requireUpdate || settings.voxelScale != m_settings.voxelScale) {
     m_voxels.GenerateMesh(m_allCoords, settings.voxelScale, m_all_V, m_all_F);
-    m_voxels.GenerateMesh(m_supportingCoords,
-                          settings.voxelScale,
-                          m_supporting_V,
-                          m_supporting_F);
     m_voxels.GenerateMesh(
         m_filteredCoords, settings.voxelScale, m_filtered_V, m_filtered_F);
     m_voxels.GenerateMesh(
@@ -140,10 +136,6 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
         m_mainUI->GetViewerData(LayerId::VoxelAll);
     setData(data_all, m_all_V, m_all_F, m_all_P);
 
-    igl::opengl::ViewerData& data_supporting =
-        m_mainUI->GetViewerData(LayerId::VoxelSupporting);
-    setData(data_supporting, m_supporting_V, m_supporting_F, m_supporting_P);
-
     igl::opengl::ViewerData& data_filtered =
         m_mainUI->GetViewerData(LayerId::VoxelFiltered);
     setData(data_filtered, m_filtered_V, m_filtered_F, m_filtered_P);
@@ -160,6 +152,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     data_gripper.clear();
     data_gripper.set_face_based(true);
     data_gripper.set_mesh(m_gripper.V(), m_gripper.F());
+    data_gripper.set_colors(Eigen::RowVector3d::Constant(0.4));
 
     igl::opengl::ViewerData& data_offset =
         m_mainUI->GetViewerData(LayerId::Offset);

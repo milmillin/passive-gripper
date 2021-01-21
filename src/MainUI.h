@@ -20,7 +20,6 @@ namespace gripper {
 enum LayerId {
   Mesh = 0,
   VoxelAll,
-  VoxelSupporting,
   VoxelFiltered,
   VoxelBest,
   GripperMesh,

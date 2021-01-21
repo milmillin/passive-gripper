@@ -13,6 +13,12 @@ double HorizontalTwiceSignedArea(const Vector3d& t1,
   return (t1(0) - t3(0)) * (t2(2) - t3(2)) - (t2(0) - t3(0)) * (t1(2) - t3(2));
 }
 
+Vector3d ComputeNormal(const RowVector3d& p1,
+                       const RowVector3d& p2,
+                       const RowVector3d& p3) {
+  return (p2 - p1).cross(p3 - p1).normalized();
+}
+
 bool IsSupportPointStable(const Vector3d& p,
                           const Vector3d& t1,
                           const Vector3d& t2,
@@ -52,8 +58,8 @@ double TriangleStability(const Vector3d& p,
   return std::min({d1, d2, d3});
 }
 
-std::vector<Voxels::Voxel> FindBestContactDumb(
-    const std::vector<Voxels::Voxel>& voxelCoords,
+std::vector<Voxels::VoxelD> FindBestContactDumb(
+    const std::vector<Voxels::VoxelD>& voxelCoords,
     const Voxels::VoxelD& centerOfMass) {
   typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
   Index3 bestIndex(-1, -1, -1);
@@ -71,9 +77,9 @@ std::vector<Voxels::Voxel> FindBestContactDumb(
       for (ssize_t j = i + 1; j < numVoxels; j++) {
         for (ssize_t k = j + 1; k < numVoxels; k++) {
           t_stability = TriangleStability(centerOfMass,
-                                          voxelCoords[i].cast<double>(),
-                                          voxelCoords[j].cast<double>(),
-                                          voxelCoords[k].cast<double>());
+                                          voxelCoords[i],
+                                          voxelCoords[j],
+                                          voxelCoords[k]);
           if (t_stability > t_bestStability) {
             t_bestStability = t_stability;
             t_bestIndex = Index3(i, j, k);
@@ -89,10 +95,9 @@ std::vector<Voxels::Voxel> FindBestContactDumb(
     }
   }
 
-  std::vector<Voxels::Voxel> result;
+  std::vector<Voxels::VoxelD> result;
   for (int i = 0; i < 3; i++) {
-    if (bestIndex(i) != -1)
-      result.push_back(voxelCoords[bestIndex(i)]);
+    if (bestIndex(i) != -1) result.push_back(voxelCoords[bestIndex(i)]);
   }
   return result;
 }
@@ -102,9 +107,8 @@ std::vector<Eigen::Vector3d> RefineContactPoint(
     const Eigen::MatrixXd& mesh_V,
     const Eigen::MatrixXi& mesh_F,
     const Voxels& voxels,
-    const std::vector<Voxels::Voxel>& voxelCoords,
-    double rodDiameter) {
-  static const float tolerance = 0.005f;
+    const std::vector<Voxels::Voxel>& voxelCoords) {
+  static const float tolerance = 0.001f;
 
   igl::embree::EmbreeIntersector intersector;
   intersector.init(mesh_V.cast<float>(), mesh_F, true);
@@ -115,8 +119,7 @@ std::vector<Eigen::Vector3d> RefineContactPoint(
     RowVector3f position = voxels.GetVoxelCenter<float>(coord).transpose();
     igl::Hit hit;
     if (intersector.intersectRay(position, rayDirection, hit)) {
-      position =
-          position + (hit.t - rodDiameter / 2 - tolerance) * rayDirection;
+      position = position + (hit.t - tolerance) * rayDirection;
     }
     result.push_back(position.cast<double>().transpose());
   }
@@ -135,6 +138,46 @@ Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size) {
   out_V = cube_V.cwiseProduct(size.transpose().replicate<8, 1>()) +
           origin.transpose().replicate<8, 1>();
   return out_V;
+}
+
+static const double cylinderAngleStep = 2 * EIGEN_PI / cylinderSubdivision;
+Eigen::MatrixXd GenerateCylinderV(Eigen::Vector3d p0,
+                                  Eigen::Vector3d p1,
+                                  double radius) {
+  Eigen::Vector3d L = (p1 - p0).normalized();
+  Eigen::Vector3d N = L.cross(Eigen::Vector3d::UnitX());
+  if (N.squaredNorm() < 1e-6) N = L.cross(Eigen::Vector3d::UnitY());
+  Eigen::Vector3d B = L.cross(N);
+
+  N *= radius;
+  B *= radius;
+
+  Eigen::MatrixXd v(cylinderNumV, 3);
+  for (size_t i = 0; i < cylinderSubdivision; i++) {
+    v.row(i) =
+        p0 + N * cos(cylinderAngleStep * i) + B * sin(cylinderAngleStep * i);
+    v.row(i + cylinderSubdivision) =
+        p1 + N * cos(cylinderAngleStep * i) + B * sin(cylinderAngleStep * i);
+  }
+  return v;
+}
+
+Eigen::MatrixXi GenerateCylinderF() {
+  Eigen::MatrixXi f(cylinderNumF, 3);
+  for (size_t i = 0; i < cylinderSubdivision; i++) {
+    f.row(i) = Eigen::RowVector3i(
+        i, (i + 1) % cylinderSubdivision, i + cylinderSubdivision);
+    f.row(i + cylinderSubdivision) =
+        Eigen::RowVector3i((i + 1) % cylinderSubdivision + cylinderSubdivision,
+                           i + cylinderSubdivision,
+                           (i + 1) % cylinderSubdivision);
+  }
+  for (size_t i = 1; i < cylinderSubdivision - 1; i++) {
+    f.row(i + 2 * cylinderSubdivision - 1) = Eigen::RowVector3i(i + 1, i, 0);  
+    f.row(i + 3 * cylinderSubdivision - 3) =
+        Eigen::RowVector3i(0, i, i + 1).array() + cylinderSubdivision;
+  }
+  return f;
 }
 
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {

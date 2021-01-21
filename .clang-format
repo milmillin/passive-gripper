@@ -1,5 +1,6 @@
 ﻿---
 BasedOnStyle: Chromium
+AllowShortIfStatementsOnASingleLine: 'WithoutElse'
 BinPackArguments: 'false'
 BinPackParameters: 'false'
 

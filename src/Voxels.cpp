@@ -1,7 +1,6 @@
 #include "Voxels.h"
 
 #include <Eigen/Core>
-#include <igl/embree/EmbreeIntersector.h>
 #include <vector>
 #include <omp.h>
 
@@ -11,14 +10,14 @@
 
 namespace gripper {
 
-void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, int numDivision,
+void Voxels::Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, double voxelSize,
     Voxels& out_voxels, std::vector<Voxel>& out_voxelCoords)
 {
   igl::embree::EmbreeIntersector intersector;
   intersector.init(mesh_V.cast<float>(), mesh_F, true);
 
   MeshInfo meshInfo(mesh_V, mesh_F);
-  double cubeSize = (meshInfo.size / numDivision).minCoeff();
+  double cubeSize = voxelSize;
   RowVector3f offset = RowVector3f::Constant(cubeSize / 2);
   RowVector3f direction(0, 0, 1);
   double tFar = meshInfo.size.maxCoeff();

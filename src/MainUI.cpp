@@ -1,6 +1,7 @@
 #include "MainUI.h"
 
 #include "Geometry.h"
+#include <imgui.h>
 
 namespace gripper {
 
@@ -81,7 +82,8 @@ void MainUI::draw_viewer_menu()
       ImGui::Separator();
         
       ImGui::PushItemWidth(120.f);
-      ImGui::InputInt("# of Division", &voxelSettings.numDivision, 1, 10);
+      ImGui::InputDouble("Voxel Size (m)", &voxelSettings.voxelSize, 0.001, 0.01);
+      ImGui::InputDouble("Rod Diameter (m)", &voxelSettings.rodDiameter, 0.001, 0.01);
       if (ImGui::DragFloat2("Grab angle", voxelSettings.grabAngle.data(), 1.f, -360.f, 360.f)) {
         DrawGrabDirection();
       }
@@ -109,6 +111,7 @@ void MainUI::draw_viewer_menu()
     }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
+    ImGui::Checkbox("Offset Mesh", (bool*)&(viewer->data(LayerId::Offset).is_visible));
     ImGui::Checkbox("Voxel", (bool*)&(viewer->data(LayerId::VoxelAll).is_visible));
     ImGui::Checkbox("Voxel Support", (bool*)&(viewer->data(LayerId::VoxelSupporting).is_visible));
     ImGui::Checkbox("Voxel Filtered", (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));

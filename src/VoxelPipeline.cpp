@@ -1,5 +1,7 @@
 #include "VoxelPipeline.h"
 
+#include <igl/offset_surface.h>
+
 #include "Geometry.h"
 #include "Gripper.h"
 
@@ -25,9 +27,29 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
   m_isReady = false;
   bool requireUpdate = false;
 
+  // Offset Mesh
+  if (isInit || settings.rodDiameter != m_settings.rodDiameter) {
+    Eigen::MatrixXd GV;
+    Eigen::Matrix<double, -1, 1> S;
+    Eigen::RowVector3i side;
+
+    igl::offset_surface(
+      m_mesh_V,
+      m_mesh_F,
+      m_settings.rodDiameter / 2,
+      30,
+      igl::SignedDistanceType::SIGNED_DISTANCE_TYPE_DEFAULT,
+      m_offset_mesh_V,
+      m_offset_mesh_F,
+      GV, side, S
+    );
+
+    m_offset_meshInfo = MeshInfo(m_offset_mesh_V, m_offset_mesh_F);
+  }
+
   // Voxelize
-  if (isInit || settings.numDivision != m_settings.numDivision) {
-    Voxels::Voxelize(m_mesh_V, m_mesh_F, settings.numDivision, m_voxels, m_allCoords);
+  if (isInit || settings.voxelSize != m_settings.voxelSize) {
+    Voxels::Voxelize(m_offset_mesh_V, m_offset_mesh_F, settings.voxelSize, m_voxels, m_allCoords);
 
     // Filter Supporting Voxels
     m_supportingCoords = m_voxels.FilterSupportingVoxels(m_allCoords, m_meshInfo.minimum.y());
@@ -36,22 +58,38 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
 
     requireUpdate = true;
   }
-  
+
   // Filter Grab Direction
   if (isInit || requireUpdate || settings.grabAngle != m_settings.grabAngle) {
     Eigen::Vector3f grabDirection = -GetDirectionFromAngle(settings.grabAngle);
-    m_filteredCoords = m_voxels.FilterGrabDirection(m_supportingCoords, m_mesh_V, m_mesh_F, grabDirection);
+    m_filteredCoords = m_voxels.FilterGrabDirection(
+      m_supportingCoords,
+      m_offset_mesh_V,
+      m_offset_mesh_F,
+      grabDirection
+    );
 
     requireUpdate = true;
   }
 
   // Solve Best Contact
-  if (isInit || requireUpdate || settings.findBestContact != m_settings.findBestContact) {
+  if (isInit || requireUpdate ||
+    settings.findBestContact != m_settings.findBestContact ||
+    settings.rodDiameter != m_settings.rodDiameter)
+  {
     if (settings.findBestContact) m_bestCoords = FindBestContactDumb(m_filteredCoords, m_centerOfMass);
     else m_bestCoords.clear();
 
+    std::vector<Eigen::Vector3d> contactPoints = RefineContactPoint(
+      m_mesh_V, m_mesh_F,
+      m_voxels, m_bestCoords, settings.rodDiameter
+    );
+
     // Generate Gripper
-    m_gripper = Gripper(m_mesh_V, m_mesh_F, m_voxels, m_bestCoords, settings.grabAngle);
+    m_gripper = Gripper(
+      m_mesh_V, m_mesh_F,
+      contactPoints, settings.rodDiameter, settings.grabAngle
+    );
 
     requireUpdate = true;
   }
@@ -71,7 +109,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     m_voxels.GenerateMesh(m_supportingCoords, settings.voxelScale, m_supporting_V, m_supporting_F);
     m_voxels.GenerateMesh(m_filteredCoords, settings.voxelScale, m_filtered_V, m_filtered_F);
     m_voxels.GenerateMesh(m_bestCoords, settings.voxelScale, m_best_V, m_best_F);
-    
+
     requireUpdate = true;
   }
 
@@ -98,7 +136,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
 
     igl::opengl::ViewerData& data_all = m_mainUI->GetViewerData(LayerId::VoxelAll);
     setData(data_all, m_all_V, m_all_F, m_all_P);
-    
+
     igl::opengl::ViewerData& data_supporting = m_mainUI->GetViewerData(LayerId::VoxelSupporting);
     setData(data_supporting, m_supporting_V, m_supporting_F, m_supporting_P);
 
@@ -113,6 +151,10 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings, bool i
     data_gripper.clear();
     data_gripper.set_face_based(true);
     data_gripper.set_mesh(m_gripper.V(), m_gripper.F());
+
+    igl::opengl::ViewerData& data_offset = m_mainUI->GetViewerData(LayerId::Offset);
+    data_offset.clear();
+    data_offset.set_mesh(m_offset_mesh_V, m_offset_mesh_F);
 
     m_mainUI->viewerDataMutex.unlock();
   }

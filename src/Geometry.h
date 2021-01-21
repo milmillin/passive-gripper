@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <set>
 #include <random>
+#include <igl/embree/EmbreeIntersector.h>
 
 #include "Voxels.h"
 
@@ -48,6 +49,9 @@ set<T> SelectInRange(T start, T end, T n) {
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
 
 std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>& voxelCoords, const Voxels::VoxelD& centerOfMass);
+
+std::vector<Eigen::Vector3d> RefineContactPoint(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F,
+  const Voxels& voxels, const std::vector<Voxels::Voxel>& voxelCoords, double rodDiameter);
 
 // Inline mesh of a cube
 const MatrixXd cube_V = (MatrixXd(8, 3) <<

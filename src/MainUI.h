@@ -24,6 +24,7 @@ enum LayerId {
   VoxelFiltered,
   VoxelBest,
   GripperMesh,
+  Offset,
   Max
 };
 

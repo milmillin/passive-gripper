@@ -87,6 +87,27 @@ std::vector<Voxels::Voxel> FindBestContactDumb(const std::vector<Voxels::Voxel>&
   return result;
 }
 
+// Nudge the contact point so that the rod can support
+std::vector<Eigen::Vector3d> RefineContactPoint(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F, const Voxels& voxels, const std::vector<Voxels::Voxel>& voxelCoords, double rodDiameter)
+{
+  static const float tolerance = 0.005f;
+  
+  igl::embree::EmbreeIntersector intersector;
+  intersector.init(mesh_V.cast<float>(), mesh_F, true);
+  Eigen::RowVector3f rayDirection = Eigen::RowVector3f::UnitY();
+
+  std::vector<Eigen::Vector3d> result;
+  for (const auto& coord : voxelCoords) {
+    RowVector3f position = voxels.GetVoxelCenter<float>(coord).transpose();
+    igl::Hit hit;
+    if (intersector.intersectRay(position, rayDirection, hit)) {
+      position = position + (hit.t - rodDiameter / 2 - tolerance) * rayDirection;
+    }
+    result.push_back(position.cast<double>().transpose());
+  }
+  return result;
+}
+
 Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size)
 {
   for (ssize_t i = 0; i < 3; i++) {

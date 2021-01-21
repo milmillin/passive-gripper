@@ -10,7 +10,7 @@ namespace gripper {
 class Gripper {
 public:
   Gripper(const Eigen::MatrixXd& mesh_V, const Eigen::MatrixXi& mesh_F,
-    const Voxels& voxels, const std::vector<Voxels::Voxel>& voxelCoords,
+    const std::vector<Eigen::Vector3d>& contactPoints, double rodDiameter,
     const Eigen::Vector2f& grabAngle);
   Gripper();
 

@@ -21,7 +21,7 @@ public:
   typedef Eigen::Matrix<ssize_t, 3, 1> Voxel;
   typedef Eigen::Matrix<double, 3, 1> VoxelD;
 
-  static void Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, int numDivision,
+  static void Voxelize(const MatrixXd& mesh_V, const MatrixXi& mesh_F, double voxelSize,
     Voxels& out_voxels, std::vector<Voxel>& out_voxelCoords);
 
   void GenerateMesh(const std::vector<Voxel>& voxelCoords, float voxelBoxSizeScale,

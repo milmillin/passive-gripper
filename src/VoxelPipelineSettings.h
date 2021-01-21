@@ -4,10 +4,13 @@ namespace gripper {
 
 struct VoxelPipelineSettings {
   // Voxelization Settings
-  int numDivision = 30;
+  double voxelSize = 0.005;
 
   // Filter Voxel Settings
   Eigen::Vector2f grabAngle = Eigen::Vector2f(0, 0); // In degrees
+
+  // Rod Diameter
+  double rodDiameter = 0.011;
 
   // Solver Settings
   bool findBestContact = false;

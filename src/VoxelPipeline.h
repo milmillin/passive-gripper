@@ -27,6 +27,10 @@ private:
   Eigen::MatrixXi m_mesh_F;
   MeshInfo m_meshInfo;
 
+  Eigen::MatrixXd m_offset_mesh_V;
+  Eigen::MatrixXi m_offset_mesh_F;
+  MeshInfo m_offset_meshInfo;
+
   Voxels m_voxels;
   Voxels::VoxelD m_centerOfMass;
 

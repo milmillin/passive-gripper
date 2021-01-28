@@ -56,6 +56,13 @@ option(LIBIGL_WITH_EMBREE            "Use Embree"         ON)
 
 find_package(LIBIGL REQUIRED QUIET)
 
+# TODO fixme
+include_directories(external/dxflib/include)
+set(SRCFILES ${SRCFILES} 
+    external/dxflib/include/dxflib/src/dl_dxf.cpp
+    external/dxflib/include/dxflib/src/dl_writer_ascii.cpp
+)
+
 # Link Embree
 find_package(embree 3 CONFIG REQUIRED)
 

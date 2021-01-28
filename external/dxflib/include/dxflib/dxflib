@@ -1,0 +1,17 @@
+
+#ifndef DXFLIB_H
+#define DXFLIB_H
+
+#include "src/dl_attributes.h"
+#include "src/dl_codes.h"
+#include "src/dl_creationadapter.h"
+#include "src/dl_creationinterface.h"
+#include "src/dl_dxf.h"
+#include "src/dl_entities.h"
+#include "src/dl_exception.h"
+#include "src/dl_extrusion.h"
+#include "src/dl_global.h"
+#include "src/dl_writer.h"
+#include "src/dl_writer_ascii.h"
+
+#endif

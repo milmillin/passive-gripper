@@ -113,6 +113,11 @@ void MainUI::draw_viewer_menu() {
       } else {
         ImGui::Text("Busy...");
       }
+      if (voxelPipeline != nullptr && voxelPipeline->IsReady()) {
+        if (ImGui::Button("Save DXF", ImVec2(w - p, 0))) {
+          SaveDXF();
+        }
+      }
     }
   }
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -159,6 +164,11 @@ void MainUI::UpdateVoxels() {
   tasks.push_back(
       std::move(std::make_pair(std::unique_ptr<std::atomic<bool>>(done),
                                std::unique_ptr<std::thread>(task))));
+}
+
+void MainUI::SaveDXF() {
+  std::string filename = igl::file_dialog_save();
+  voxelPipeline->WriteDXF(filename);
 }
 
 void MainUI::DrawGrabDirection() {

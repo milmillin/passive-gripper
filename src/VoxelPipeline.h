@@ -20,6 +20,11 @@ class VoxelPipeline {
 
   void UpdateSettings(const VoxelPipelineSettings& settings,
                       bool isInit = false);
+
+  inline void WriteDXF(const std::string& filename) const {
+    m_gripper.WriteDXF(filename);
+  }
+
   inline bool IsReady() { return m_isReady; }
 
  private:

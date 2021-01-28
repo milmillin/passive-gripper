@@ -49,6 +49,7 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
  private:
   void UpdateVoxels();
   void DrawGrabDirection();
+  void SaveDXF();
 
   inline Eigen::MatrixXd& GetMeshVertices() {
     return viewer->data(LayerId::Mesh).V;

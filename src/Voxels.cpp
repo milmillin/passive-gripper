@@ -143,10 +143,12 @@ std::vector<Voxels::Voxel> Voxels::FilterGrabDirection(
   return result;
 }
 
-std::vector<Voxels::VoxelD> Voxels::GetSupportCandidates(
+void Voxels::GetSupportCandidates(
     std::vector<Voxel> voxelCoords,
     Vector3f grabDirection,
-    double groundY) const {
+    double groundY,
+    std::vector<VoxelD>& out_voxelCoords,
+    std::vector<Eigen::Vector3d>& out_normals) const {
   // Sort by x, z, y
   std::sort(voxelCoords.begin(),
             voxelCoords.end(),
@@ -160,7 +162,9 @@ std::vector<Voxels::VoxelD> Voxels::GetSupportCandidates(
   Eigen::RowVector3f grabRay = -grabDirection.transpose();
   Voxel oneY(0, 1, 0);
 
-  std::vector<Voxels::VoxelD> result;
+  out_voxelCoords.clear();
+  out_normals.clear();
+
   for (size_t i = 0; i < voxelCoords.size(); i++) {
     Voxel support = voxelCoords[i] - oneY;
     Eigen::RowVector3f supportPos = GetVoxelCenter<float>(support).transpose();
@@ -180,17 +184,18 @@ std::vector<Voxels::VoxelD> Voxels::GetSupportCandidates(
 
     // Filter Grab Direction
     if (m_intersector.intersectRay(contactPos, grabRay, hit)) continue;
-    result.push_back(((contactPos.cast<double>() - origin) / cubeSize).array() -
+    out_voxelCoords.push_back(((contactPos.cast<double>() - origin) / cubeSize).array() -
                      0.5);
+    out_normals.push_back(-normal.normalized());
   }
-  return result;
 }
 
-template<typename T>
-void Voxels::GenerateMesh(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
-                          float voxelBoxSizeScale,
-                          MatrixXd& out_V,
-                          MatrixXi& out_F) const {
+template <typename T>
+void Voxels::GenerateMesh(
+    const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
+    float voxelBoxSizeScale,
+    MatrixXd& out_V,
+    MatrixXi& out_F) const {
   ssize_t numVoxels = voxelCoords.size();
 
   out_V.resize(8 * numVoxels, 3);
@@ -210,9 +215,10 @@ void Voxels::GenerateMesh(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords
   }
 }
 
-template<typename T>
-void Voxels::GeneratePoints(const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
-                            MatrixXd& out_P) const {
+template <typename T>
+void Voxels::GeneratePoints(
+    const std::vector<Eigen::Matrix<T, 3, 1>>& voxelCoords,
+    MatrixXd& out_P) const {
   ssize_t numVoxels = voxelCoords.size();
 
   out_P.resize(numVoxels, 3);

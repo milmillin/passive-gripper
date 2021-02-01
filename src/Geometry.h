@@ -41,11 +41,28 @@ std::vector<Voxels::VoxelD> FindBestContactDumb(
     const std::vector<Voxels::VoxelD>& voxelCoords,
     const Voxels::VoxelD& centerOfMass);
 
+std::vector<size_t> FindBestContactDumb2(
+    const std::vector<Voxels::VoxelD>& voxelCoords,
+    const std::vector<Eigen::Vector3d>& normals,
+    const Voxels::VoxelD& centerOfMass);
+
+
 std::vector<Eigen::Vector3d> RefineContactPoint(
     const Eigen::MatrixXd& mesh_V,
     const Eigen::MatrixXi& mesh_F,
     const Voxels& voxels,
     const std::vector<Voxels::Voxel>& voxelCoords);
+
+bool IsSupportPointStable(const Vector3d& center,
+                          const Eigen::Matrix3d& rotation,
+                          double threshold,
+                          const vector<Vector3d>& p,
+                          const vector<Vector3d>& dir);
+
+double GetMinStableAngle(const Vector3d& center,
+                         double threshold,
+                         const vector<Vector3d>& p,
+                         const vector<Vector3d>& dir);
 
 // clang-format off
 // Inline mesh of a cube

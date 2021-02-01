@@ -51,9 +51,11 @@ class Voxels {
                                          const MatrixXi& mesh_F,
                                          Vector3f grabDirection) const;
 
-  std::vector<VoxelD> GetSupportCandidates(std::vector<Voxel> voxelCoords,
-                                           Vector3f grabDirection,
-                                           double groundY) const;
+  void GetSupportCandidates(std::vector<Voxel> voxelCoords,
+                            Vector3f grabDirection,
+                            double groundY,
+                            std::vector<VoxelD>& out_voxelCoords,
+                            std::vector<Vector3d>& out_normals) const;
 
   template <typename T, typename U>
   inline Eigen::Matrix<T, 3, 1> GetVoxelCenter(

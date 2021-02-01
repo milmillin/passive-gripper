@@ -64,8 +64,11 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   if (isInit || requireUpdate || settings.grabAngle != m_settings.grabAngle) {
     Eigen::Vector3f grabDirection = -GetDirectionFromAngle(settings.grabAngle);
 
-    m_filteredCoords = m_voxels.GetSupportCandidates(
-        m_allCoords, grabDirection, m_meshInfo.minimum.y());
+    m_voxels.GetSupportCandidates(m_allCoords,
+                                  grabDirection,
+                                  m_meshInfo.minimum.y(),
+                                  m_filteredCoords,
+                                  m_filteredNormals);
 
     requireUpdate = true;
   }
@@ -74,14 +77,21 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   if (isInit || requireUpdate ||
       settings.findBestContact != m_settings.findBestContact ||
       settings.rodDiameter != m_settings.rodDiameter) {
-    if (settings.findBestContact)
-      m_bestCoords = FindBestContactDumb(m_filteredCoords, m_centerOfMass);
-    else
+    if (settings.findBestContact) {
+      auto bestIndex = FindBestContactDumb2(
+          m_filteredCoords, m_filteredNormals, m_centerOfMass);
+
+      m_bestCoords.resize(bestIndex.size());
+      for (size_t i = 0; i < m_bestCoords.size(); i++) {
+        m_bestCoords[i] = m_filteredCoords[bestIndex[i]];      
+      }
+    } else {
       m_bestCoords.clear();
+    }
 
     std::vector<Eigen::Vector3d> contactPoints;
     for (const auto& p : m_bestCoords) {
-      contactPoints.push_back(m_voxels.GetVoxelCenter<double>(p));    
+      contactPoints.push_back(m_voxels.GetVoxelCenter<double>(p));
     }
 
     // Generate Gripper

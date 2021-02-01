@@ -29,7 +29,7 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   viewer->data_list[LayerId::VoxelFiltered].point_size = 3;
 
   // Set default
-  viewer->data_list[LayerId::Mesh].show_lines = false;
+  // viewer->data_list[LayerId::Mesh].show_lines = false;
   viewer->data_list[LayerId::Offset].show_lines = false;
   viewer->data_list[LayerId::GripperMesh].show_lines = false;
 

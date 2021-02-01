@@ -102,6 +102,55 @@ std::vector<Voxels::VoxelD> FindBestContactDumb(
   return result;
 }
 
+std::vector<size_t> FindBestContactDumb2(
+    const std::vector<Voxels::VoxelD>& voxelCoords,
+    const std::vector<Eigen::Vector3d>& normals,
+    const Voxels::VoxelD& centerOfMass) {
+
+  typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
+  Index3 bestIndex(-1, -1, -1);
+  double bestStability = 0;
+  ssize_t numVoxels = voxelCoords.size();
+
+#pragma omp parallel
+  {
+    Index3 t_bestIndex(-1, -1, -1);
+    double t_bestStability = 0;
+    double t_stability = 0;
+
+#pragma omp for
+    for (ssize_t i = 0; i < numVoxels; i++) {
+      for (ssize_t j = i + 1; j < numVoxels; j++) {
+        for (ssize_t k = j + 1; k < numVoxels; k++) {
+          std::vector<Eigen::Vector3d> p = {
+              voxelCoords[i], voxelCoords[j], voxelCoords[k]};
+          std::vector<Eigen::Vector3d> n = {
+              normals[i], normals[j], normals[k]};
+
+          t_stability = GetMinStableAngle(centerOfMass, 0, p, n);
+
+          if (t_stability > t_bestStability) {
+            t_bestStability = t_stability;
+            t_bestIndex = Index3(i, j, k);
+          }
+        }
+      }
+    }
+
+#pragma omp critical
+    if (t_bestStability > bestStability) {
+      bestStability = t_bestStability;
+      bestIndex = t_bestIndex;
+    }
+  }
+
+  std::vector<size_t> result;
+  for (int i = 0; i < 3; i++) {
+    if (bestIndex(i) != -1) result.push_back(bestIndex(i));
+  }
+  return result;
+}
+
 // Nudge the contact point so that the rod can support
 std::vector<Eigen::Vector3d> RefineContactPoint(
     const Eigen::MatrixXd& mesh_V,
@@ -188,6 +237,70 @@ Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
   float cosB = std::cos(B);
   float sinB = std::sin(B);
   return Eigen::Vector3f(cosA * cosB, sinB, sinA * cosB);
+}
+
+inline double distance(double x, double y) {
+  return std::sqrt(x * x + y * y);
+}
+
+bool IsSupportPointStable(const Vector3d& center,
+                          const Eigen::Matrix3d& rotation,
+                          double threshold,
+                          const vector<Vector3d>& p,
+                          const vector<Vector3d>& dir) {
+  assert(dir.size() == 3 && p.size() == 3);
+  assert(threshold >= -0.0);
+
+  for (size_t i = 0; i < dir.size(); i++) {
+    Vector3d newDir = rotation * dir[i];
+    if (std::atan2(newDir(1), distance(newDir(0), newDir(2))) < threshold)
+      return false;
+  }
+
+  vector<Vector3d> newP;
+  for (const auto& point : p)
+    newP.push_back(rotation * point);
+  return IsSupportPointStable(rotation * center, newP[0], newP[1], newP[2]);
+}
+
+
+static inline double angleBetween(const Vector3d& v1, const Vector3d& v2) {
+  return 2 * std::atan2((v1 - v2).norm(), (v1 + v2).norm());
+}
+
+static double getMinStableAngleHelper(const Vector3d& p1,
+                                      const Vector3d& p2,
+                                      const Vector3d& other) {
+  Vector3d n = p1.cross(p2);
+  if (n.dot(other) < 0) n = -n;
+
+  auto& gravity = -Vector3d::UnitY();
+  return EIGEN_PI / 2 - angleBetween(n, gravity);
+}
+
+double GetMinStableAngle(const Vector3d& center,
+                         double threshold,
+                         const vector<Vector3d>& p,
+                         const vector<Vector3d>& dir) {
+  assert(dir.size() == 3 && p.size() == 3);
+  assert(threshold >= -0.0);
+
+  vector<Vector3d> unitP;
+  for (auto& point : p)
+    unitP.push_back((point - center).normalized());
+
+  double a1 = getMinStableAngleHelper(unitP[0], unitP[1], unitP[2]);
+  double a2 = getMinStableAngleHelper(unitP[1], unitP[2], unitP[0]);
+  double a3 = getMinStableAngleHelper(unitP[2], unitP[0], unitP[1]);
+  double result = std::min({a1, a2, a3});
+
+  for (auto& direction : dir) {
+    if (direction(1) <= 0) return 0;
+    double angle = angleBetween(direction, Vector3d::UnitY());
+    result = std::min(result, (double)EIGEN_PI / 2 - angle - threshold);
+  }
+
+  return result;
 }
 
 }  // namespace gripper

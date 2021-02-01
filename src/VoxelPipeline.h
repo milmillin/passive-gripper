@@ -59,6 +59,8 @@ class VoxelPipeline {
   Eigen::MatrixXd m_best_P;
 
   Gripper m_gripper;
+
+  std::vector<Eigen::Vector3d> m_filteredNormals;
 };
 
 }  // namespace gripper

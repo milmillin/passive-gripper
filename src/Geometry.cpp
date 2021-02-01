@@ -6,175 +6,6 @@
 
 namespace gripper {
 
-// Horizontal is x-z plane
-double HorizontalTwiceSignedArea(const Vector3d& t1,
-                                 const Vector3d& t2,
-                                 const Vector3d& t3) {
-  return (t1(0) - t3(0)) * (t2(2) - t3(2)) - (t2(0) - t3(0)) * (t1(2) - t3(2));
-}
-
-Vector3d ComputeNormal(const RowVector3d& p1,
-                       const RowVector3d& p2,
-                       const RowVector3d& p3) {
-  return (p2 - p1).cross(p3 - p1).normalized();
-}
-
-bool IsSupportPointStable(const Vector3d& p,
-                          const Vector3d& t1,
-                          const Vector3d& t2,
-                          const Vector3d& t3) {
-  double d1 = HorizontalTwiceSignedArea(p, t1, t2);
-  double d2 = HorizontalTwiceSignedArea(p, t2, t3);
-  double d3 = HorizontalTwiceSignedArea(p, t3, t1);
-  // std::cout << "IsSupportPointStable " << d1 << " " << d2 << " " << d3 <<
-  // std::endl;
-  return (d1 > 0 && d2 > 0 && d3 > 0) || (d1 < 0 && d2 < 0 && d3 < 0);
-}
-
-double HorizontalDistance(const Vector3d& p,
-                          const Vector3d& l1,
-                          const Vector3d& l2) {
-  Vector2d v(l2(2) - l1(2), -(l2(0) - l1(0)));
-  v.normalize();
-  Vector2d r(l1(0) - p(0), l1(2) - p(2));
-  // std::cout <<"vector "<< v(0) <<" " <<v(1)<<" " <<r(0)<<"
-  // "<<r(1)<<std::endl; std::cout <<"dot " << v.dot(r); std::cout <<"abs " <<
-  // std::abs(v.dot(r));
-  return std::abs(v.dot(r));
-}
-
-double TriangleStability(const Vector3d& p,
-                         const Vector3d& t1,
-                         const Vector3d& t2,
-                         const Vector3d& t3) {
-  if (!IsSupportPointStable(p, t1, t2, t3)) {
-    return 0;
-  }
-  double d1 = HorizontalDistance(p, t1, t2);
-  double d2 = HorizontalDistance(p, t2, t3);
-  double d3 = HorizontalDistance(p, t3, t1);
-  // std::cout << "TriangleStability " << d1 << " " << d2 << " " << d3 <<
-  // std::endl;
-  return std::min({d1, d2, d3});
-}
-
-std::vector<Voxels::VoxelD> FindBestContactDumb(
-    const std::vector<Voxels::VoxelD>& voxelCoords,
-    const Voxels::VoxelD& centerOfMass) {
-  typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
-  Index3 bestIndex(-1, -1, -1);
-  double bestStability = 0;
-  ssize_t numVoxels = voxelCoords.size();
-
-#pragma omp parallel
-  {
-    Index3 t_bestIndex(-1, -1, -1);
-    double t_bestStability = 0;
-    double t_stability = 0;
-
-#pragma omp for
-    for (ssize_t i = 0; i < numVoxels; i++) {
-      for (ssize_t j = i + 1; j < numVoxels; j++) {
-        for (ssize_t k = j + 1; k < numVoxels; k++) {
-          t_stability = TriangleStability(centerOfMass,
-                                          voxelCoords[i],
-                                          voxelCoords[j],
-                                          voxelCoords[k]);
-          if (t_stability > t_bestStability) {
-            t_bestStability = t_stability;
-            t_bestIndex = Index3(i, j, k);
-          }
-        }
-      }
-    }
-
-#pragma omp critical
-    if (t_bestStability > bestStability) {
-      bestStability = t_bestStability;
-      bestIndex = t_bestIndex;
-    }
-  }
-
-  std::vector<Voxels::VoxelD> result;
-  for (int i = 0; i < 3; i++) {
-    if (bestIndex(i) != -1) result.push_back(voxelCoords[bestIndex(i)]);
-  }
-  return result;
-}
-
-std::vector<size_t> FindBestContactDumb2(
-    const std::vector<Voxels::VoxelD>& voxelCoords,
-    const std::vector<Eigen::Vector3d>& normals,
-    const Voxels::VoxelD& centerOfMass) {
-
-  typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
-  Index3 bestIndex(-1, -1, -1);
-  double bestStability = 0;
-  ssize_t numVoxels = voxelCoords.size();
-
-#pragma omp parallel
-  {
-    Index3 t_bestIndex(-1, -1, -1);
-    double t_bestStability = 0;
-    double t_stability = 0;
-
-#pragma omp for
-    for (ssize_t i = 0; i < numVoxels; i++) {
-      for (ssize_t j = i + 1; j < numVoxels; j++) {
-        for (ssize_t k = j + 1; k < numVoxels; k++) {
-          std::vector<Eigen::Vector3d> p = {
-              voxelCoords[i], voxelCoords[j], voxelCoords[k]};
-          std::vector<Eigen::Vector3d> n = {
-              normals[i], normals[j], normals[k]};
-
-          t_stability = GetMinStableAngle(centerOfMass, 0, p, n);
-
-          if (t_stability > t_bestStability) {
-            t_bestStability = t_stability;
-            t_bestIndex = Index3(i, j, k);
-          }
-        }
-      }
-    }
-
-#pragma omp critical
-    if (t_bestStability > bestStability) {
-      bestStability = t_bestStability;
-      bestIndex = t_bestIndex;
-    }
-  }
-
-  std::vector<size_t> result;
-  for (int i = 0; i < 3; i++) {
-    if (bestIndex(i) != -1) result.push_back(bestIndex(i));
-  }
-  return result;
-}
-
-// Nudge the contact point so that the rod can support
-std::vector<Eigen::Vector3d> RefineContactPoint(
-    const Eigen::MatrixXd& mesh_V,
-    const Eigen::MatrixXi& mesh_F,
-    const Voxels& voxels,
-    const std::vector<Voxels::Voxel>& voxelCoords) {
-  static const float tolerance = 0.001f;
-
-  igl::embree::EmbreeIntersector intersector;
-  intersector.init(mesh_V.cast<float>(), mesh_F, true);
-  Eigen::RowVector3f rayDirection = Eigen::RowVector3f::UnitY();
-
-  std::vector<Eigen::Vector3d> result;
-  for (const auto& coord : voxelCoords) {
-    RowVector3f position = voxels.GetVoxelCenter<float>(coord).transpose();
-    igl::Hit hit;
-    if (intersector.intersectRay(position, rayDirection, hit)) {
-      position = position + (hit.t - tolerance) * rayDirection;
-    }
-    result.push_back(position.cast<double>().transpose());
-  }
-  return result;
-}
-
 Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size) {
   for (ssize_t i = 0; i < 3; i++) {
     if (size(i) < 0) {
@@ -222,7 +53,7 @@ Eigen::MatrixXi GenerateCylinderF() {
                            (i + 1) % cylinderSubdivision);
   }
   for (size_t i = 1; i < cylinderSubdivision - 1; i++) {
-    f.row(i + 2 * cylinderSubdivision - 1) = Eigen::RowVector3i(i + 1, i, 0);  
+    f.row(i + 2 * cylinderSubdivision - 1) = Eigen::RowVector3i(i + 1, i, 0);
     f.row(i + 3 * cylinderSubdivision - 3) =
         Eigen::RowVector3i(0, i, i + 1).array() + cylinderSubdivision;
   }
@@ -230,8 +61,8 @@ Eigen::MatrixXi GenerateCylinderF() {
 }
 
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
-  float A = angle(0) / 180.f * EIGEN_PI;
-  float B = angle(1) / 180.f * EIGEN_PI;
+  float A = angle(0) * DEGREE_TO_RADIAN;
+  float B = angle(1) * DEGREE_TO_RADIAN;
   float cosA = std::cos(A);
   float sinA = std::sin(A);
   float cosB = std::cos(B);
@@ -239,68 +70,44 @@ Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle) {
   return Eigen::Vector3f(cosA * cosB, sinB, sinA * cosB);
 }
 
-inline double distance(double x, double y) {
-  return std::sqrt(x * x + y * y);
+// Input
+// p1, p2: unit vector from center of mass to contact point
+// Returns
+// (1) Side of the plane p1-p2
+// (2) Angle between gravity and plane p1-p2
+static std::pair<bool, double> AngleFromSideToGravity(Eigen::Vector3d p1,
+                                                      Eigen::Vector3d p2) {
+  static const Eigen::Vector3d gravity = -Eigen::Vector3d::UnitY();
+  Eigen::Vector3d n = p1.cross(p2);
+  double cosAlpha = n.dot(gravity);
+  return {cosAlpha > 0, abs(EIGEN_PI / 2. - acos(cosAlpha))};
 }
 
-bool IsSupportPointStable(const Vector3d& center,
-                          const Eigen::Matrix3d& rotation,
-                          double threshold,
-                          const vector<Vector3d>& p,
-                          const vector<Vector3d>& dir) {
-  assert(dir.size() == 3 && p.size() == 3);
-  assert(threshold >= -0.0);
+std::pair<int, double> EvaluateContactPoints(
+    const Eigen::Vector3d& centerOfMass,
+    const ContactPoint& c1,
+    const ContactPoint& c2,
+    const ContactPoint& c3) {
 
-  for (size_t i = 0; i < dir.size(); i++) {
-    Vector3d newDir = rotation * dir[i];
-    if (std::atan2(newDir(1), distance(newDir(0), newDir(2))) < threshold)
-      return false;
+  Eigen::Vector3d p1 = (c1.position - centerOfMass).normalized();
+  Eigen::Vector3d p2 = (c2.position - centerOfMass).normalized();
+  Eigen::Vector3d p3 = (c3.position - centerOfMass).normalized();
+
+  auto res1 = AngleFromSideToGravity(p1, p2);
+  auto res2 = AngleFromSideToGravity(p2, p3);
+  auto res3 = AngleFromSideToGravity(p3, p1);
+
+  // Gravity not in triangle
+  if (res1.first != res2.first || res1.first != res3.first) {
+    return {-1, 0.};      
   }
+  
+  int countA = 0;
+  if (c1.isTypeA) countA++;
+  if (c2.isTypeA) countA++;
+  if (c3.isTypeA) countA++;
 
-  vector<Vector3d> newP;
-  for (const auto& point : p)
-    newP.push_back(rotation * point);
-  return IsSupportPointStable(rotation * center, newP[0], newP[1], newP[2]);
-}
-
-
-static inline double angleBetween(const Vector3d& v1, const Vector3d& v2) {
-  return 2 * std::atan2((v1 - v2).norm(), (v1 + v2).norm());
-}
-
-static double getMinStableAngleHelper(const Vector3d& p1,
-                                      const Vector3d& p2,
-                                      const Vector3d& other) {
-  Vector3d n = p1.cross(p2);
-  if (n.dot(other) < 0) n = -n;
-
-  auto& gravity = -Vector3d::UnitY();
-  return EIGEN_PI / 2 - angleBetween(n, gravity);
-}
-
-double GetMinStableAngle(const Vector3d& center,
-                         double threshold,
-                         const vector<Vector3d>& p,
-                         const vector<Vector3d>& dir) {
-  assert(dir.size() == 3 && p.size() == 3);
-  assert(threshold >= -0.0);
-
-  vector<Vector3d> unitP;
-  for (auto& point : p)
-    unitP.push_back((point - center).normalized());
-
-  double a1 = getMinStableAngleHelper(unitP[0], unitP[1], unitP[2]);
-  double a2 = getMinStableAngleHelper(unitP[1], unitP[2], unitP[0]);
-  double a3 = getMinStableAngleHelper(unitP[2], unitP[0], unitP[1]);
-  double result = std::min({a1, a2, a3});
-
-  for (auto& direction : dir) {
-    if (direction(1) <= 0) return 0;
-    double angle = angleBetween(direction, Vector3d::UnitY());
-    result = std::min(result, (double)EIGEN_PI / 2 - angle - threshold);
-  }
-
-  return result;
+  return {countA, std::min({res1.second, res2.second, res3.second})};
 }
 
 }  // namespace gripper

@@ -233,7 +233,8 @@ void VoxelPipeline::FindTypeBContactPoints(
   // Make the object centered in the voxels space
   Eigen::RowVector3f origin =
       ((m_offset_meshInfo.minimum -
-        (voxelDimension.transpose().cast<double>() - m_offset_meshInfo.size) / 2.)
+        (voxelDimension.transpose().cast<double>() - m_offset_meshInfo.size) /
+            2.)
            .array() +
        (settings.voxelSize / 2))
           .cast<float>();
@@ -273,7 +274,8 @@ void VoxelPipeline::FindTypeBContactPoints(
 void VoxelPipeline::FilterFeasibleContactPoints(
     const VoxelPipelineSettings& settings) {
   // Only consider faces that are tilted by more than threshold angle.
-  static const double thresholdY = -sin(settings.thresholdAngle * DEGREE_TO_RADIAN);
+  static const double thresholdY =
+      -sin(settings.thresholdAngle * DEGREE_TO_RADIAN);
 
   std::vector<ContactPoint> filteredContactPoints;
 
@@ -309,11 +311,49 @@ void VoxelPipeline::FilterFeasibleContactPoints(
 
 void VoxelPipeline::FindBestContactPoints(
     const VoxelPipelineSettings& settings) {
-  // TODO
+  typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
+  Index3 bestIndex(-1, -1, -1);
+  std::pair<int, double> bestStability = {-1, 100};
+  ssize_t numContacts = m_contactPoints.size();
+
+#pragma omp parallel
+  {
+    Index3 t_bestIndex(-1, -1, -1);
+    std::pair<int, double> t_bestStability = {-1, 100};
+    std::pair<int, double> t_stability = {-1, 100};
+
+#pragma omp for
+    for (ssize_t i = 0; i < numContacts; i++) {
+      for (ssize_t j = i + 1; j < numContacts; j++) {
+        for (ssize_t k = j + 1; k < numContacts; k++) {
+          t_stability = EvaluateContactPoints(m_centerOfMass,
+                                              m_contactPoints[i],
+                                              m_contactPoints[j],
+                                              m_contactPoints[k]);
+          if (t_stability > t_bestStability) {
+            t_bestStability = t_stability;
+            t_bestIndex = Index3(i, j, k);
+          }
+        }
+      }
+    }
+
+#pragma omp critical
+    if (t_bestStability > bestStability) {
+      bestStability = t_bestStability;
+      bestIndex = t_bestIndex;
+    }
+  }
+
+  m_bestContactPoints.clear();
+  for (int i = 0; i < 3; i++) {
+    if (bestIndex(i) != -1) m_bestContactPoints.push_back(m_contactPoints[bestIndex(i)]);
+  }
 }
 
 void VoxelPipeline::SetViewerData() {
-  static Eigen::RowVector3d centerOfMassColor = Eigen::RowVector3d(130, 4, 1) / 255;
+  static Eigen::RowVector3d centerOfMassColor =
+      Eigen::RowVector3d(130, 4, 1) / 255;
 
   m_mainUI->viewerDataMutex.lock();
 

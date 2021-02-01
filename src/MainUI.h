@@ -6,7 +6,6 @@
 #include "MeshInfo.h"
 #include "VoxelPipeline.h"
 #include "VoxelPipelineSettings.h"
-#include "Voxels.h"
 
 #include <atomic>
 #include <memory>
@@ -19,11 +18,12 @@ namespace gripper {
 
 enum LayerId {
   Mesh = 0,
-  VoxelAll,
-  VoxelFiltered,
-  VoxelBest,
-  GripperMesh,
   Offset,
+  GripperDirection,
+  CenterOfMass,
+  Candidates,
+  BestContacts,
+  GripperMesh,
   Max
 };
 

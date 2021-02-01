@@ -4,7 +4,8 @@
 #include <vector>
 #include <string>
 
-#include "Voxels.h"
+#include "VoxelPipelineSettings.h"
+#include "ContactPoint.h"
 
 namespace gripper {
 
@@ -12,9 +13,9 @@ class Gripper {
  public:
   Gripper(const Eigen::MatrixXd& mesh_V,
           const Eigen::MatrixXi& mesh_F,
-          const std::vector<Eigen::Vector3d>& contactPoints,
-          double rodDiameter,
-          const Eigen::Vector2f& grabAngle);
+          const std::vector<ContactPoint>& contactPoints,
+          const VoxelPipelineSettings& settings);
+
   Gripper();
 
   void WriteDXF(const std::string& filename) const;
@@ -31,6 +32,10 @@ class Gripper {
   std::vector<Eigen::Vector2d> m_rodLocations;
   std::vector<double> m_rodLengths;
   Eigen::Vector2d m_plateDimension;
+
+  double m_rodRadius;
+  double m_fitterMountRadius;
+  double m_fitterScrewRadius;
 };
 
 }  // namespace gripper

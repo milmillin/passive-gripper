@@ -9,6 +9,8 @@
 
 namespace gripper {
 
+const float DEGREE_TO_RADIAN = EIGEN_PI / 180;
+
 using Eigen::RowVector3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;

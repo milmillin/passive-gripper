@@ -142,7 +142,7 @@ void VoxelPipeline::CalculateCenterOfMass(
   {
     Eigen::Vector3d t_massContribution(0, 0, 0);
     ssize_t t_count = 0;
-    vector<igl::Hit> t_hits;
+    std::vector<igl::Hit> t_hits;
     int t_numRays;
     Eigen::RowVector3f t_direction = Eigen::RowVector3f::UnitZ();
 

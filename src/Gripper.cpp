@@ -25,7 +25,7 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
   // Rotated mesh so that the gripper comes in -x direction
   Eigen::MatrixXd rotated_V(mesh_V.rows(), 3);
   for (size_t i = 0; i < mesh_V.rows(); i++) {
-    Vector3d v = mesh_V.row(i);
+    Eigen::Vector3d v = mesh_V.row(i);
     rotated_V.row(i) = tInverse * v;
   }
 
@@ -49,8 +49,8 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
 
   // Generate rods
   for (size_t i = 0; i < contactPoints.size(); i++) {
-    Vector3d contactPosition = tInverse * contactPoints[i].position;
-    Vector3d origin(info.maximum.x(), contactPosition.y(), contactPosition.z());
+    Eigen::Vector3d contactPosition = tInverse * contactPoints[i].position;
+    Eigen::Vector3d origin(info.maximum.x(), contactPosition.y(), contactPosition.z());
 
     m_rodLocations.push_back(
         Eigen::Vector2d(contactPosition.z() - info.minimum.z() + padding,
@@ -65,7 +65,7 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
 
   // Rotate back
   for (size_t i = 0; i < gripper_V.rows(); i++) {
-    Vector3d v = gripper_V.row(i);
+    Eigen::Vector3d v = gripper_V.row(i);
     gripper_V.row(i) = t * v;
   }
 }

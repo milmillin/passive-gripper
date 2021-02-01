@@ -8,14 +8,14 @@
 
 namespace gripper {
 
-const float ANGLE_TO_RADIAN = EIGEN_PI / 180;
-
 Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
                  const Eigen::MatrixXi& mesh_F,
-                 const std::vector<Eigen::Vector3d>& contactPoints,
-                 double rodDiameter,
-                 const Eigen::Vector2f& grabAngle)
-    : m_grabAngle(grabAngle * ANGLE_TO_RADIAN) {
+                 const std::vector<ContactPoint>& contactPoints,
+                 const VoxelPipelineSettings& settings)
+    : m_grabAngle(settings.grabAngle * DEGREE_TO_RADIAN),
+      m_rodRadius(settings.rodDiameter / 2),
+      m_fitterMountRadius(settings.fitterMountDiameter / 2),
+      m_fitterScrewRadius(settings.fitterScrewDiameter / 2) {
   Eigen::Affine3d t = Eigen::Affine3d::Identity();
   t.rotate(Eigen::AngleAxisd(-m_grabAngle(0), Eigen::Vector3d::UnitY()));
   t.rotate(Eigen::AngleAxisd(m_grabAngle(1), Eigen::Vector3d::UnitZ()));
@@ -35,19 +35,21 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
   gripper_F.resize(12 + cylinderNumF * contactPoints.size(), 3);
 
   // Generate backplate
-  static const double padding = 0.075; // TODO
+  static const double padding = 0.075;  // TODO
   m_plateDimension =
       Eigen::Vector2d(info.size.z() + padding * 2, info.size.y() + padding * 2);
 
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
-      Eigen::Vector3d(info.maximum.x(), info.minimum.y() - padding, info.minimum.z() - padding),
+      Eigen::Vector3d(info.maximum.x(),
+                      info.minimum.y() - padding,
+                      info.minimum.z() - padding),
       // TODO: Check backplate thickness
       Eigen::Vector3d(0.02, m_plateDimension.y(), m_plateDimension.x()));
   gripper_F.block<12, 3>(0, 0) = cube_F;
 
   // Generate rods
   for (size_t i = 0; i < contactPoints.size(); i++) {
-    Vector3d contactPosition = tInverse * contactPoints[i];
+    Vector3d contactPosition = tInverse * contactPoints[i].position;
     Vector3d origin(info.maximum.x(), contactPosition.y(), contactPosition.z());
 
     m_rodLocations.push_back(
@@ -56,7 +58,7 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
     m_rodLengths.push_back(info.maximum.x() - contactPosition.x());
 
     gripper_V.block<cylinderNumV, 3>(8 + i * cylinderNumV, 0) =
-        GenerateCylinderV(origin, contactPosition, rodDiameter / 2);
+        GenerateCylinderV(origin, contactPosition, settings.rodDiameter / 2);
     gripper_F.block<cylinderNumF, 3>(12 + i * cylinderNumF, 0) =
         cylinder_F.array() + (8 + i * cylinderNumV);
   }
@@ -146,50 +148,31 @@ void Gripper::WriteDXF(const std::string& filename) const {
   double width = m_plateDimension.x() * 1000;
   double height = m_plateDimension.y() * 1000;
 
+  dxf.writeLine(*dw, DL_LineData(0, 0, 0, 0, height, 0), defaultAttribute);
   dxf.writeLine(
-      *dw, DL_LineData(0, 0, 0, 0, height, 0), defaultAttribute);
-  dxf.writeLine(*dw,
-                DL_LineData(0,
-                            height,
-                            0,
-                            width,
-                            height,
-                            0),
-                defaultAttribute);
-  dxf.writeLine(*dw,
-                DL_LineData(width,
-                            height,
-                            0,
-                            width,
-                            0,
-                            0),
-                defaultAttribute);
+      *dw, DL_LineData(0, height, 0, width, height, 0), defaultAttribute);
   dxf.writeLine(
-      *dw, DL_LineData(width, 0, 0, 0, 0, 0), defaultAttribute);
+      *dw, DL_LineData(width, height, 0, width, 0, 0), defaultAttribute);
+  dxf.writeLine(*dw, DL_LineData(width, 0, 0, 0, 0, 0), defaultAttribute);
 
-  // TODO: Change settings
-  // fixed for 12mm shaft
-  // https://www.mcmaster.com/9604T14/
-  static const double shaftRadius = 6;     // in mm
-  static const double mountRadius = 19.5;  // in mm
-  static const double screwRadius = 2.2;   // in mm
-
+  // Drawing starts here
   for (size_t i = 0; i < m_rodLocations.size(); i++) {
     dxf.writeCircle(*dw,
                     DL_CircleData(m_rodLocations[i].x() * 1000,
                                   m_rodLocations[i].y() * 1000,
                                   0,
-                                  shaftRadius),
+                                  m_rodRadius),
                     defaultAttribute);
 
     for (int j = 0; j < 3; j++) {
       double angle = EIGEN_PI * 2 / 3 * j;
       Eigen::Vector2d screwLocation =
           m_rodLocations[i] * 1000 +
-          mountRadius * Eigen::Vector2d(cos(angle), sin(angle));
+          m_fitterMountRadius * Eigen::Vector2d(cos(angle), sin(angle));
       dxf.writeCircle(
           *dw,
-          DL_CircleData(screwLocation.x(), screwLocation.y(), 0, screwRadius),
+          DL_CircleData(
+              screwLocation.x(), screwLocation.y(), 0, m_fitterScrewRadius),
           defaultAttribute);
     }
   }

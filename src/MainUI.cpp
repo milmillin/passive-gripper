@@ -25,11 +25,11 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   viewer->next_data_id = LayerId::Max;
 
   // Set default point size
-  viewer->data_list[LayerId::VoxelAll].point_size = 3;
-  viewer->data_list[LayerId::VoxelFiltered].point_size = 3;
+  viewer->data_list[LayerId::CenterOfMass].point_size = 8;
+  viewer->data_list[LayerId::Candidates].point_size = 8;
+  viewer->data_list[LayerId::BestContacts].point_size = 8;
 
   // Set default
-  // viewer->data_list[LayerId::Mesh].show_lines = false;
   viewer->data_list[LayerId::Offset].show_lines = false;
   viewer->data_list[LayerId::GripperMesh].show_lines = false;
 
@@ -91,9 +91,19 @@ void MainUI::draw_viewer_menu() {
 
       ImGui::PushItemWidth(120.f);
       ImGui::InputDouble(
-          "Voxel Size (m)", &voxelSettings.voxelSize, 0.001, 0.01);
-      ImGui::InputDouble(
           "Rod Diameter (m)", &voxelSettings.rodDiameter, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Fitter Diameter (m)", &voxelSettings.fitterDiameter, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Mount Diameter (m)", &voxelSettings.fitterMountDiameter, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Screw Diameter (m)", &voxelSettings.fitterScrewDiameter, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Grid Spacing for Type B (m)", &voxelSettings.gridSpacing, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Voxel Size for CM (m)", &voxelSettings.voxelSize, 0.001, 0.01);
+      ImGui::InputDouble(
+          "Epsilon (m)", &voxelSettings.epsilon, 0.001, 0.01);
       if (ImGui::DragFloat2("Grab angle",
                             voxelSettings.grabAngle.data(),
                             1.f,
@@ -101,13 +111,11 @@ void MainUI::draw_viewer_menu() {
                             360.f)) {
         DrawGrabDirection();
       }
-      ImGui::InputFloat("Voxel scale", &voxelSettings.voxelScale, 0.1, 0.2);
-      ImGui::Checkbox("Show as point", &voxelSettings.showAsPoint);
       ImGui::Checkbox("Find Best Contact", &voxelSettings.findBestContact);
       ImGui::PopItemWidth();
 
       if (voxelPipeline == nullptr || voxelPipeline->IsReady()) {
-        if (ImGui::Button("Update Voxels", ImVec2(w - p, 0))) {
+        if (ImGui::Button("Update", ImVec2(w - p, 0))) {
           UpdateVoxels();
         }
       } else {
@@ -123,23 +131,26 @@ void MainUI::draw_viewer_menu() {
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("View");
     if (ImGui::InputFloat("Point Size",
-                          &(viewer->data(LayerId::VoxelAll).point_size),
+                          &(viewer->data(LayerId::CenterOfMass).point_size),
                           1,
                           2,
                           "%.0f")) {
-      viewer->data(LayerId::VoxelFiltered).point_size =
-          viewer->data(LayerId::VoxelAll).point_size;
+      viewer->data(LayerId::Candidates).point_size =
+          viewer->data(LayerId::BestContacts).point_size =
+          viewer->data(LayerId::CenterOfMass).point_size;
     }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
     ImGui::Checkbox("Offset Mesh",
                     (bool*)&(viewer->data(LayerId::Offset).is_visible));
-    ImGui::Checkbox("Voxel",
-                    (bool*)&(viewer->data(LayerId::VoxelAll).is_visible));
-    ImGui::Checkbox("Voxel Filtered",
-                    (bool*)&(viewer->data(LayerId::VoxelFiltered).is_visible));
-    ImGui::Checkbox("Voxel Best",
-                    (bool*)&(viewer->data(LayerId::VoxelBest).is_visible));
+    ImGui::Checkbox("Gripper Direction",
+                    (bool*)&(viewer->data(LayerId::GripperDirection).is_visible));
+    ImGui::Checkbox("Center of Mass",
+                    (bool*)&(viewer->data(LayerId::CenterOfMass).is_visible));
+    ImGui::Checkbox("Candidates",
+                    (bool*)&(viewer->data(LayerId::Candidates).is_visible));
+    ImGui::Checkbox("Best Contacts",
+                    (bool*)&(viewer->data(LayerId::BestContacts).is_visible));
     ImGui::Checkbox("Gripper",
                     (bool*)&(viewer->data(LayerId::GripperMesh).is_visible));
 
@@ -173,7 +184,7 @@ void MainUI::SaveDXF() {
 
 void MainUI::DrawGrabDirection() {
   static Eigen::RowVector3d directionColor = Eigen::RowVector3d(1, 0.5, 0);
-  auto& layer = viewer->data(LayerId::Mesh);
+  auto& layer = viewer->data(LayerId::GripperDirection);
   layer.clear_edges();
   layer.add_edges(Eigen::RowVector3d::Zero(),
                   GetDirectionFromAngle(voxelSettings.grabAngle)

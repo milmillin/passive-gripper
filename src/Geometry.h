@@ -3,70 +3,28 @@
 #include <igl/embree/EmbreeIntersector.h>
 #include <Eigen/Core>
 #include <random>
-#include <set>
 
-#include "Voxels.h"
+#include "ContactPoint.h"
 
 namespace gripper {
 
-using Eigen::RowVector3d;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using std::set;
-
-Vector3d ComputeNormal(const RowVector3d& p1,
-                       const RowVector3d& p2,
-                       const RowVector3d& p3);
-
-// Test if the object is stable using the support points
-// p: center of mass for this object
-// t1, t2, t3: support points
-bool IsSupportPointStable(const Vector3d& p,
-                          const Vector3d& t1,
-                          const Vector3d& t2,
-                          const Vector3d& t3);
-
-double HorizontalDistance(const Vector3d& p,
-                          const Vector3d& l1,
-                          const Vector3d& l2);
-
-double TriangleStability(const Vector3d& p,
-                         const Vector3d& t1,
-                         const Vector3d& t2,
-                         const Vector3d& t3);
+const float DEGREE_TO_RADIAN = EIGEN_PI / 180;
 
 Eigen::Vector3f GetDirectionFromAngle(const Eigen::Vector2f& angle);
 
-std::vector<Voxels::VoxelD> FindBestContactDumb(
-    const std::vector<Voxels::VoxelD>& voxelCoords,
-    const Voxels::VoxelD& centerOfMass);
-
-std::vector<size_t> FindBestContactDumb2(
-    const std::vector<Voxels::VoxelD>& voxelCoords,
-    const std::vector<Eigen::Vector3d>& normals,
-    const Voxels::VoxelD& centerOfMass);
-
-
-std::vector<Eigen::Vector3d> RefineContactPoint(
-    const Eigen::MatrixXd& mesh_V,
-    const Eigen::MatrixXi& mesh_F,
-    const Voxels& voxels,
-    const std::vector<Voxels::Voxel>& voxelCoords);
-
-bool IsSupportPointStable(const Vector3d& center,
-                          const Eigen::Matrix3d& rotation,
-                          double threshold,
-                          const vector<Vector3d>& p,
-                          const vector<Vector3d>& dir);
-
-double GetMinStableAngle(const Vector3d& center,
-                         double threshold,
-                         const vector<Vector3d>& p,
-                         const vector<Vector3d>& dir);
+// Returns
+// (1) number of Type A contacts, -1 if impossible, greater is better
+// (2) minimum angle between center of mass and triangle on a sphere,
+//     greater is better
+std::pair<int, double> EvaluateContactPoints(
+    const Eigen::Vector3d& centerOfMass,
+    const ContactPoint& c1,
+    const ContactPoint& c2,
+    const ContactPoint& c3);
 
 // clang-format off
 // Inline mesh of a cube
-const MatrixXd cube_V = (MatrixXd(8, 3) <<
+const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
   0.0, 0.0, 0.0,
   0.0, 0.0, 1.0,
   0.0, 1.0, 0.0,
@@ -75,7 +33,7 @@ const MatrixXd cube_V = (MatrixXd(8, 3) <<
   1.0, 0.0, 1.0,
   1.0, 1.0, 0.0,
   1.0, 1.0, 1.0).finished();
-const MatrixXi cube_F = (MatrixXi(12, 3) <<
+const Eigen::MatrixXi cube_F = (Eigen::MatrixXi(12, 3) <<
   1, 7, 5,
   1, 3, 7,
   1, 4, 3,
@@ -100,6 +58,6 @@ Eigen::MatrixXd GenerateCylinderV(Eigen::Vector3d p0,
                                   double radius);
 Eigen::MatrixXi GenerateCylinderF();
 
-const MatrixXi cylinder_F = GenerateCylinderF();
+const Eigen::MatrixXi cylinder_F = GenerateCylinderF();
 
 }  // namespace gripper

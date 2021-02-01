@@ -1,12 +1,15 @@
 #pragma once
 
+#include <igl/embree/EmbreeIntersector.h>
 #include <Eigen/Core>
 #include <atomic>
+#include <string>
+#include <vector>
 
+#include "ContactPoint.h"
 #include "Gripper.h"
 #include "MainUI.h"
 #include "VoxelPipelineSettings.h"
-#include "Voxels.h"
 
 namespace gripper {
 
@@ -28,6 +31,22 @@ class VoxelPipeline {
   inline bool IsReady() { return m_isReady; }
 
  private:
+  void GenerateOffsetMesh(const VoxelPipelineSettings& settings);
+  void CalculateCenterOfMass(const VoxelPipelineSettings& settings);
+
+  void FindTypeAContactPoints(const VoxelPipelineSettings& settings);
+  void FindTypeBContactPoints(const VoxelPipelineSettings& settings);
+
+  void FilterFeasibleContactPoints(const VoxelPipelineSettings& settings);
+
+  void FindBestContactPoints(const VoxelPipelineSettings& settings);
+
+  void SetViewerData();
+
+  static void GeneratePoints(const std::vector<ContactPoint>& points,
+                             Eigen::MatrixXd& out_P,
+                             Eigen::MatrixXd& out_PC);
+
   MainUI* m_mainUI;
   std::atomic<bool> m_isReady;
   VoxelPipelineSettings m_settings;
@@ -35,32 +54,24 @@ class VoxelPipeline {
   Eigen::MatrixXd m_mesh_V;
   Eigen::MatrixXi m_mesh_F;
   MeshInfo m_meshInfo;
+  igl::embree::EmbreeIntersector m_mesh_intersector;
+  Eigen::Vector3d m_centerOfMass;
 
   Eigen::MatrixXd m_offset_mesh_V;
   Eigen::MatrixXi m_offset_mesh_F;
+  Eigen::MatrixXd m_offset_mesh_N;
   MeshInfo m_offset_meshInfo;
+  igl::embree::EmbreeIntersector m_offset_mesh_intersector;
 
-  Voxels m_voxels;
-  Voxels::VoxelD m_centerOfMass;
+  std::vector<ContactPoint> m_contactPoints;
+  std::vector<ContactPoint> m_bestContactPoints;
 
-  std::vector<Voxels::Voxel> m_allCoords;
-  Eigen::MatrixXd m_all_V;
-  Eigen::MatrixXi m_all_F;
-  Eigen::MatrixXd m_all_P;
-
-  std::vector<Voxels::VoxelD> m_filteredCoords;
-  Eigen::MatrixXd m_filtered_V;
-  Eigen::MatrixXi m_filtered_F;
-  Eigen::MatrixXd m_filtered_P;
-
-  std::vector<Voxels::VoxelD> m_bestCoords;
-  Eigen::MatrixXd m_best_V;
-  Eigen::MatrixXi m_best_F;
-  Eigen::MatrixXd m_best_P;
+  Eigen::MatrixXd m_contactPoints_P;
+  Eigen::MatrixXd m_contactPoints_PC;
+  Eigen::MatrixXd m_bestContactPoints_P;
+  Eigen::MatrixXd m_bestContactPoints_PC;
 
   Gripper m_gripper;
-
-  std::vector<Eigen::Vector3d> m_filteredNormals;
 };
 
 }  // namespace gripper

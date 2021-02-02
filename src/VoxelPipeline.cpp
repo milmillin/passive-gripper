@@ -66,7 +66,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     }
 
     // Generate Gripper
-    m_gripper = Gripper(m_mesh_V, m_mesh_F, m_bestContactPoints, settings);
+    m_gripper = Gripper(m_mesh_V, m_mesh_F, m_bestContactPoints, m_centerOfMass, settings);
 
     requireUpdate = true;
   }

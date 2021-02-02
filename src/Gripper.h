@@ -14,6 +14,7 @@ class Gripper {
   Gripper(const Eigen::MatrixXd& mesh_V,
           const Eigen::MatrixXi& mesh_F,
           const std::vector<ContactPoint>& contactPoints,
+          const Eigen::Vector3d& centerOfMass,
           const VoxelPipelineSettings& settings);
 
   Gripper();
@@ -29,11 +30,13 @@ class Gripper {
   Eigen::MatrixXd gripper_V;
   Eigen::MatrixXi gripper_F;
 
-  std::vector<Eigen::Vector2d> m_rodLocations;
+  Eigen::MatrixX2d m_rodLocations;
   std::vector<double> m_rodLengths;
   Eigen::Vector2d m_plateDimension;
+  double m_cmLocationX;
 
   double m_rodRadius;
+  double m_fitterRadius;
   double m_fitterMountRadius;
   double m_fitterScrewRadius;
 };

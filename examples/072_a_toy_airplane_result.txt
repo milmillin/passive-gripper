@@ -1,0 +1,19 @@
+=== SETTINGS ===
+s.gridSpacing: 0.005
+s.voxelSize: 0.005
+s.epsilon: 0.001
+s.thresholdAngle: 60
+s.grabAngle(0): 0
+s.grabAngle(1): 0
+s.rodDiameter: 0.012
+s.fitterDiameter: 0.05
+s.fitterMountDiameter: 0.039
+s.fitterScrewDiameter: 0.0044
+
+=== PLATE DIMENSION in m
+0.185403 0.167975
+
+=== RODS (x, y, r) in m ===
+     0.03 0.0689609 0.0988538
+0.1509   0.03 0.208582
+ 0.155403 0.0959754 0.0805658

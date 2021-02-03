@@ -1,21 +1,23 @@
 #pragma once
 
 #include <Eigen/Core>
-#include <vector>
+#include <Eigen/Geometry>
 #include <string>
+#include <vector>
 
-#include "VoxelPipelineSettings.h"
 #include "ContactPoint.h"
+#include "MeshInfo.h"
+#include "VoxelPipelineSettings.h"
 
 namespace gripper {
 
 class Gripper {
  public:
-  Gripper(const Eigen::MatrixXd& mesh_V,
-          const Eigen::MatrixXi& mesh_F,
-          const std::vector<ContactPoint>& contactPoints,
+  Gripper(const std::vector<ContactPoint>& contactPoints,
           const Eigen::Vector3d& centerOfMass,
-          const VoxelPipelineSettings& settings);
+          const VoxelPipelineSettings& settings,
+          const MeshInfo& rotatedMeshInfo,
+          const Eigen::Affine3d& rotation);
 
   Gripper();
 
@@ -24,16 +26,16 @@ class Gripper {
   inline const Eigen::MatrixXd& V() const { return gripper_V; }
   inline const Eigen::MatrixXi& F() const { return gripper_F; }
 
- private:
-  Eigen::Vector2f m_grabAngle;
+  Eigen::MatrixX2d rodLocations;
+  std::vector<double> rodLengths;
+  Eigen::Vector2d plateDimension;
 
+ private:
   Eigen::MatrixXd gripper_V;
   Eigen::MatrixXi gripper_F;
 
-  Eigen::MatrixX2d m_rodLocations;
-  std::vector<double> m_rodLengths;
-  Eigen::Vector2d m_plateDimension;
   double m_cmLocationX;
+  double m_mountOriginY;
 
   double m_rodRadius;
   double m_fitterRadius;

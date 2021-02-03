@@ -21,7 +21,8 @@ enum LayerId {
   Offset,
   GripperDirection,
   CenterOfMass,
-  Candidates,
+  AllContacts,
+  FilteredContacts,
   BestContacts,
   GripperMesh,
   Max
@@ -50,6 +51,7 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void UpdateVoxels();
   void DrawGrabDirection();
   void SaveDXF();
+  void SaveResult();
 
   inline Eigen::MatrixXd& GetMeshVertices() {
     return viewer->data(LayerId::Mesh).V;

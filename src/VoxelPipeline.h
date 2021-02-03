@@ -28,9 +28,12 @@ class VoxelPipeline {
     m_gripper.WriteDXF(filename);
   }
 
+  void WriteResult(const std::string& filename) const;
+
   inline bool IsReady() { return m_isReady; }
 
  private:
+  void GenerateRotatedMesh(const VoxelPipelineSettings& settings);
   void GenerateOffsetMesh(const VoxelPipelineSettings& settings);
   void CalculateCenterOfMass(const VoxelPipelineSettings& settings);
 
@@ -40,6 +43,10 @@ class VoxelPipeline {
   void FilterFeasibleContactPoints(const VoxelPipelineSettings& settings);
 
   void FindBestContactPoints(const VoxelPipelineSettings& settings);
+  bool CheckManufacturingConstraint(const VoxelPipelineSettings& settings,
+                                    const ContactPoint& a,
+                                    const ContactPoint& b,
+                                    const ContactPoint& c);
 
   void SetViewerData();
 
@@ -63,11 +70,19 @@ class VoxelPipeline {
   MeshInfo m_offset_meshInfo;
   igl::embree::EmbreeIntersector m_offset_mesh_intersector;
 
+  // rotate so that gripper comes in -x direction
+  Eigen::MatrixXd m_rotated_mesh_V;
+  MeshInfo m_rotated_meshInfo;
+  Eigen::Affine3d m_rotation;
+
   std::vector<ContactPoint> m_contactPoints;
+  std::vector<ContactPoint> m_filteredContactPoints;
   std::vector<ContactPoint> m_bestContactPoints;
 
   Eigen::MatrixXd m_contactPoints_P;
   Eigen::MatrixXd m_contactPoints_PC;
+  Eigen::MatrixXd m_filteredContactPoints_P;
+  Eigen::MatrixXd m_filteredContactPoints_PC;
   Eigen::MatrixXd m_bestContactPoints_P;
   Eigen::MatrixXd m_bestContactPoints_PC;
 

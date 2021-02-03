@@ -2,6 +2,7 @@
 
 #include <igl/offset_surface.h>
 #include <omp.h>
+#include <iostream>
 
 #include "Geometry.h"
 #include "Gripper.h"
@@ -30,30 +31,31 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     requireUpdate = true;
   }
 
+  if (isInit || settings.grabAngle != m_settings.grabAngle) {
+    GenerateRotatedMesh(settings);
+    requireUpdate = true;
+  }
+
   // Generate Offset Mesh
-  if (isInit || requireUpdate ||
-      settings.rodDiameter != m_settings.rodDiameter ||
+  if (isInit || settings.rodDiameter != m_settings.rodDiameter ||
+      settings.gridSpacing != m_settings.gridSpacing ||
       settings.epsilon != m_settings.epsilon) {
     GenerateOffsetMesh(settings);
     requireUpdate = true;
   }
 
-  // Find Type A Contact
-  if (isInit || requireUpdate || settings.grabAngle != m_settings.grabAngle) {
+  // Find Contacts
+  if (isInit || requireUpdate) {
+    m_contactPoints.clear();
     FindTypeAContactPoints(settings);
-    requireUpdate = true;
-  }
-
-  // Find Type B Contact
-  if (isInit || requireUpdate ||
-      settings.gridSpacing != m_settings.gridSpacing) {
     FindTypeBContactPoints(settings);
-    requireUpdate = true;
   }
 
   // Filter feasible contact points
-  if (isInit || requireUpdate) {
+  if (isInit || requireUpdate ||
+      settings.thresholdAngle != m_settings.thresholdAngle) {
     FilterFeasibleContactPoints(settings);
+    requireUpdate = true;
   }
 
   // Solve Best Contact
@@ -66,7 +68,11 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     }
 
     // Generate Gripper
-    m_gripper = Gripper(m_mesh_V, m_mesh_F, m_bestContactPoints, m_centerOfMass, settings);
+    m_gripper = Gripper(m_bestContactPoints,
+                        m_centerOfMass,
+                        settings,
+                        m_rotated_meshInfo,
+                        m_rotation);
 
     requireUpdate = true;
   }
@@ -74,6 +80,9 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   if (isInit || requireUpdate) {
     // Compute Points
     GeneratePoints(m_contactPoints, m_contactPoints_P, m_contactPoints_PC);
+    GeneratePoints(m_filteredContactPoints,
+                   m_filteredContactPoints_P,
+                   m_filteredContactPoints_PC);
     GeneratePoints(
         m_bestContactPoints, m_bestContactPoints_P, m_bestContactPoints_PC);
 
@@ -86,15 +95,54 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   m_isReady = true;
 }
 
+void VoxelPipeline::WriteResult(const std::string& filename) const {
+  std::ofstream out;
+  out.open(filename);
+  out << "=== SETTINGS ===\n";
+  out << m_settings;
+  out << "\n=== PLATE DIMENSION in m\n"
+      << m_gripper.plateDimension.x() << ' ' << m_gripper.plateDimension.y()
+      << '\n';
+  out << "\n=== RODS (x, y, r) in m ===\n";
+  for (size_t i = 0; i < m_gripper.rodLengths.size(); i++) {
+    out << m_gripper.rodLocations.row(i) << ' ' << m_gripper.rodLengths[i]
+        << '\n';
+  }
+  out.close();
+}
+
+void VoxelPipeline::GenerateRotatedMesh(const VoxelPipelineSettings& settings) {
+  Eigen::Vector2f grabAngle = settings.grabAngle * DEGREE_TO_RADIAN;
+  Eigen::Affine3d t = Eigen::Affine3d::Identity();
+  t.rotate(Eigen::AngleAxisd(-grabAngle(0), Eigen::Vector3d::UnitY()));
+  t.rotate(Eigen::AngleAxisd(grabAngle(1), Eigen::Vector3d::UnitZ()));
+
+  m_rotation = t.inverse();
+
+  m_rotated_mesh_V.resize(m_mesh_V.rows(), 3);
+
+#pragma omp parallel for
+  for (ssize_t i = 0; i < m_mesh_V.rows(); i++) {
+    Eigen::Vector3d v = m_mesh_V.row(i);
+    m_rotated_mesh_V.row(i) = m_rotation * v;
+  }
+
+  m_rotated_meshInfo = MeshInfo(m_rotated_mesh_V, m_mesh_F);
+}
+
 void VoxelPipeline::GenerateOffsetMesh(const VoxelPipelineSettings& settings) {
   Eigen::MatrixXd GV;
   Eigen::Matrix<double, -1, 1> S;
   Eigen::RowVector3i side;
 
+  Eigen::Vector3d expandedSize =
+      m_meshInfo.size.array() + (settings.rodDiameter + settings.epsilon * 2);
+  expandedSize /= settings.gridSpacing;
+
   igl::offset_surface(m_mesh_V,
                       m_mesh_F,
                       settings.rodDiameter / 2. + settings.epsilon,
-                      30,
+                      (int)std::ceil(expandedSize.maxCoeff()),
                       igl::SignedDistanceType::SIGNED_DISTANCE_TYPE_DEFAULT,
                       m_offset_mesh_V,
                       m_offset_mesh_F,
@@ -274,10 +322,9 @@ void VoxelPipeline::FindTypeBContactPoints(
 void VoxelPipeline::FilterFeasibleContactPoints(
     const VoxelPipelineSettings& settings) {
   // Only consider faces that are tilted by more than threshold angle.
-  static const double thresholdY =
-      -sin(settings.thresholdAngle * DEGREE_TO_RADIAN);
+  double thresholdY = -sin(settings.thresholdAngle * DEGREE_TO_RADIAN);
 
-  std::vector<ContactPoint> filteredContactPoints;
+  m_filteredContactPoints.clear();
 
 #pragma omp parallel
   {
@@ -285,15 +332,24 @@ void VoxelPipeline::FilterFeasibleContactPoints(
     igl::Hit t_hit;
     Eigen::RowVector3f t_grabDirection =
         GetDirectionFromAngle(settings.grabAngle).transpose();
+    Eigen::RowVector3f t_epsilon = t_grabDirection * 1e-5;
 #pragma omp for nowait
     for (ssize_t i = 0; i < m_contactPoints.size(); i++) {
       // Check Floor
-      if (m_contactPoints[i].position.y() <= m_meshInfo.minimum.y()) continue;
+      if (m_contactPoints[i].position.y() <=
+          m_meshInfo.minimum.y() + settings.rodDiameter / 2)
+        continue;
       // Check Supportive
       if (m_contactPoints[i].normal.y() >= thresholdY) continue;
+
+      // Check near incoming trajectory
+      Eigen::Vector3d p = m_rotation * m_contactPoints[i].position;
+      if (p.x() > m_rotated_meshInfo.maximum.x() - settings.rodDiameter)
+        continue;
+
       // Check Reachable
       if (m_offset_mesh_intersector.intersectRay(
-              m_contactPoints[i].position.cast<float>().transpose(),
+              m_contactPoints[i].position.cast<float>().transpose() + t_epsilon,
               t_grabDirection,
               t_hit))
         continue;
@@ -301,12 +357,10 @@ void VoxelPipeline::FilterFeasibleContactPoints(
     }
 
 #pragma omp critical
-    filteredContactPoints.insert(filteredContactPoints.end(),
-                                 t_contactPoints.begin(),
-                                 t_contactPoints.end());
+    m_filteredContactPoints.insert(m_filteredContactPoints.end(),
+                                   t_contactPoints.begin(),
+                                   t_contactPoints.end());
   }
-
-  m_contactPoints = filteredContactPoints;
 }
 
 void VoxelPipeline::FindBestContactPoints(
@@ -314,7 +368,7 @@ void VoxelPipeline::FindBestContactPoints(
   typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
   Index3 bestIndex(-1, -1, -1);
   std::pair<int, double> bestStability = {-1, 100};
-  ssize_t numContacts = m_contactPoints.size();
+  ssize_t numContacts = m_filteredContactPoints.size();
 
 #pragma omp parallel
   {
@@ -326,10 +380,18 @@ void VoxelPipeline::FindBestContactPoints(
     for (ssize_t i = 0; i < numContacts; i++) {
       for (ssize_t j = i + 1; j < numContacts; j++) {
         for (ssize_t k = j + 1; k < numContacts; k++) {
+          // Check manufacturing constraint
+          if (!CheckManufacturingConstraint(settings,
+                                            m_filteredContactPoints[i],
+                                            m_filteredContactPoints[j],
+                                            m_filteredContactPoints[k]))
+            continue;
+
+          // Evaluate
           t_stability = EvaluateContactPoints(m_centerOfMass,
-                                              m_contactPoints[i],
-                                              m_contactPoints[j],
-                                              m_contactPoints[k]);
+                                              m_filteredContactPoints[i],
+                                              m_filteredContactPoints[j],
+                                              m_filteredContactPoints[k]);
           if (t_stability > t_bestStability) {
             t_bestStability = t_stability;
             t_bestIndex = Index3(i, j, k);
@@ -347,8 +409,28 @@ void VoxelPipeline::FindBestContactPoints(
 
   m_bestContactPoints.clear();
   for (int i = 0; i < 3; i++) {
-    if (bestIndex(i) != -1) m_bestContactPoints.push_back(m_contactPoints[bestIndex(i)]);
+    if (bestIndex(i) != -1)
+      m_bestContactPoints.push_back(m_filteredContactPoints[bestIndex(i)]);
   }
+}
+
+bool VoxelPipeline::CheckManufacturingConstraint(
+    const VoxelPipelineSettings& settings,
+    const ContactPoint& a,
+    const ContactPoint& b,
+    const ContactPoint& c) {
+  // Check if rods is not too close
+  Eigen::Vector3d pa = m_rotation * a.position;
+  Eigen::Vector3d pb = m_rotation * b.position;
+  Eigen::Vector3d pc = m_rotation * c.position;
+  pa.x() = 0;
+  pb.x() = 0;
+  pc.x() = 0;
+
+  double disSquared = settings.fitterDiameter * settings.fitterDiameter;
+  return (pa - pb).squaredNorm() >= disSquared &&
+         (pb - pc).squaredNorm() >= disSquared &&
+         (pc - pa).squaredNorm() >= disSquared;
 }
 
 void VoxelPipeline::SetViewerData() {
@@ -359,15 +441,22 @@ void VoxelPipeline::SetViewerData() {
 
   // Candidate Layer
   igl::opengl::ViewerData& data_all =
-      m_mainUI->GetViewerData(LayerId::Candidates);
+      m_mainUI->GetViewerData(LayerId::AllContacts);
   data_all.clear();
   data_all.set_points(m_contactPoints_P, m_contactPoints_PC);
 
-  // Best Layer
+  // Candidate Layer
   igl::opengl::ViewerData& data_filtered =
-      m_mainUI->GetViewerData(LayerId::BestContacts);
+      m_mainUI->GetViewerData(LayerId::FilteredContacts);
   data_filtered.clear();
-  data_filtered.set_points(m_bestContactPoints_P, m_bestContactPoints_PC);
+  data_filtered.set_points(m_filteredContactPoints_P,
+                           m_filteredContactPoints_PC);
+
+  // Best Layer
+  igl::opengl::ViewerData& data_best =
+      m_mainUI->GetViewerData(LayerId::BestContacts);
+  data_best.clear();
+  data_best.set_points(m_bestContactPoints_P, m_bestContactPoints_PC);
 
   // Center of Mass Layer
   igl::opengl::ViewerData& data_cm =

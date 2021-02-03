@@ -1,56 +1,36 @@
 #include "Gripper.h"
 
-#include <Eigen/Geometry>
 #include <dxflib/dxflib>
-
-#include "Geometry.h"
-#include "MeshInfo.h"
 
 namespace gripper {
 
-Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
-                 const Eigen::MatrixXi& mesh_F,
-                 const std::vector<ContactPoint>& contactPoints,
+Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
                  const Eigen::Vector3d& centerOfMass,
-                 const VoxelPipelineSettings& settings)
-    : m_grabAngle(settings.grabAngle * DEGREE_TO_RADIAN),
-      m_rodRadius(settings.rodDiameter / 2),
+                 const VoxelPipelineSettings& settings,
+                 const MeshInfo& meshInfo,
+                 const Eigen::Affine3d& rotation)
+    : m_rodRadius(settings.rodDiameter / 2),
       m_fitterRadius(settings.fitterDiameter / 2),
       m_fitterMountRadius(settings.fitterMountDiameter / 2),
       m_fitterScrewRadius(settings.fitterScrewDiameter / 2) {
-  Eigen::Affine3d t = Eigen::Affine3d::Identity();
-  t.rotate(Eigen::AngleAxisd(-m_grabAngle(0), Eigen::Vector3d::UnitY()));
-  t.rotate(Eigen::AngleAxisd(m_grabAngle(1), Eigen::Vector3d::UnitZ()));
-
-  Eigen::Affine3d tInverse = t.inverse();
-
-  // Rotated mesh so that the gripper comes in -x direction
-  Eigen::MatrixXd rotated_V(mesh_V.rows(), 3);
-  for (size_t i = 0; i < mesh_V.rows(); i++) {
-    Eigen::Vector3d v = mesh_V.row(i);
-    rotated_V.row(i) = tInverse * v;
-  }
-
-  MeshInfo info(rotated_V, mesh_F);
-
   gripper_V.resize(8 + cylinderNumV * contactPoints.size(), 3);
   gripper_F.resize(12 + cylinderNumF * contactPoints.size(), 3);
 
-  m_rodLocations.resize(contactPoints.size(), Eigen::NoChange);
+  rodLocations.resize(contactPoints.size(), Eigen::NoChange);
 
-  Eigen::Vector3d rotatedCenterOfMass = tInverse * centerOfMass;
+  Eigen::Vector3d rotatedCenterOfMass = rotation * centerOfMass;
   Eigen::RowVector2d projectedCenterOfMass(rotatedCenterOfMass.z(),
                                            rotatedCenterOfMass.y());
 
   // Generate rods
   for (size_t i = 0; i < contactPoints.size(); i++) {
-    Eigen::Vector3d contactPosition = tInverse * contactPoints[i].position;
+    Eigen::Vector3d contactPosition = rotation * contactPoints[i].position;
     Eigen::Vector3d origin(
-        info.maximum.x(), contactPosition.y(), contactPosition.z());
+        meshInfo.maximum.x(), contactPosition.y(), contactPosition.z());
 
-    m_rodLocations.row(i) =
+    rodLocations.row(i) =
         Eigen::RowVector2d(contactPosition.z(), contactPosition.y());
-    m_rodLengths.push_back(info.maximum.x() - contactPosition.x());
+    rodLengths.push_back(meshInfo.maximum.x() - contactPosition.x());
 
     gripper_V.block<cylinderNumV, 3>(8 + i * cylinderNumV, 0) =
         GenerateCylinderV(origin, contactPosition, settings.rodDiameter / 2);
@@ -58,34 +38,40 @@ Gripper::Gripper(const Eigen::MatrixXd& mesh_V,
         cylinder_F.array() + (8 + i * cylinderNumV);
   }
 
+  if (contactPoints.empty()) {
+    rodLocations.resize(1, 2);
+    rodLocations(0) = 0;
+    rodLocations(1) = 0;
+  }
+
   // Generate backplate
   Eigen::RowVector2d padding(m_fitterRadius + 0.005, m_fitterRadius + 0.005);
-  Eigen::RowVector2d minCoord =
-      m_rodLocations.colwise().minCoeff() - padding;
-  Eigen::RowVector2d maxCoord =
-      m_rodLocations.colwise().maxCoeff() + padding;
+  Eigen::RowVector2d minCoord = rodLocations.colwise().minCoeff() - padding;
+  Eigen::RowVector2d maxCoord = rodLocations.colwise().maxCoeff() + padding;
 
-  // Add the arm mount 40mm by 40mm at the bottom
+  // Add the arm mount 40mm by 42mm at the top
   // The x of the center hole is the x of projected center of mass
   // The y of the center hole is 9mm below the 3 rods boundary.
+  m_mountOriginY = maxCoord.y() - minCoord.y();
   minCoord.x() = std::min(minCoord.x(), projectedCenterOfMass.x() - 0.02);
   maxCoord.x() = std::max(maxCoord.x(), projectedCenterOfMass.x() + 0.02);
-  minCoord.y() -= 0.04;
+  maxCoord.y() += 0.042;
 
-  m_plateDimension = (maxCoord - minCoord).transpose();
-  m_rodLocations -= minCoord.replicate(m_rodLocations.rows(), 1);
+  plateDimension = (maxCoord - minCoord).transpose();
+  rodLocations -= minCoord.replicate(rodLocations.rows(), 1);
   m_cmLocationX = projectedCenterOfMass.x() - minCoord.x();
 
   // TODO: Check backplate thickness
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
-      Eigen::Vector3d(info.maximum.x(), minCoord.y(), minCoord.x()),
-      Eigen::Vector3d(0.02, m_plateDimension.y(), m_plateDimension.x()));
+      Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x()),
+      Eigen::Vector3d(0.02, plateDimension.y(), plateDimension.x()));
   gripper_F.block<12, 3>(0, 0) = cube_F;
 
   // Rotate back
+  Eigen::Affine3d rotationInv = rotation.inverse();
   for (size_t i = 0; i < gripper_V.rows(); i++) {
     Eigen::Vector3d v = gripper_V.row(i);
-    gripper_V.row(i) = t * v;
+    gripper_V.row(i) = rotationInv * v;
   }
 }
 
@@ -164,8 +150,8 @@ void Gripper::WriteDXF(const std::string& filename) const {
 
   DL_Attributes defaultAttribute("0", 256, -1, "BYLAYER", 1);
 
-  double width = m_plateDimension.x() * 1000;
-  double height = m_plateDimension.y() * 1000;
+  double width = plateDimension.x() * 1000;
+  double height = plateDimension.y() * 1000;
 
   // Drawing starts here
 
@@ -178,10 +164,10 @@ void Gripper::WriteDXF(const std::string& filename) const {
   dxf.writePolylineEnd(*dw);
 
   // Contact fitter
-  for (ssize_t i = 0; i < m_rodLocations.rows(); i++) {
+  for (ssize_t i = 0; i < rodLocations.rows(); i++) {
     dxf.writeCircle(*dw,
-                    DL_CircleData(m_rodLocations.row(i).x() * 1000,
-                                  m_rodLocations.row(i).y() * 1000,
+                    DL_CircleData(rodLocations.row(i).x() * 1000,
+                                  rodLocations.row(i).y() * 1000,
                                   0,
                                   m_rodRadius * 1000),
                     defaultAttribute);
@@ -189,45 +175,54 @@ void Gripper::WriteDXF(const std::string& filename) const {
     for (int j = 0; j < 3; j++) {
       double angle = EIGEN_PI * 2 / 3 * j;
       Eigen::RowVector2d screwLocation =
-          m_rodLocations.row(i) * 1000 +
-          (m_fitterMountRadius * 1000) * Eigen::RowVector2d(cos(angle), sin(angle));
-      dxf.writeCircle(
-          *dw,
-          DL_CircleData(
-              screwLocation.x(), screwLocation.y(), 0, m_fitterScrewRadius * 1000),
-          defaultAttribute);
+          rodLocations.row(i) * 1000 +
+          (m_fitterMountRadius * 1000) *
+              Eigen::RowVector2d(cos(angle), sin(angle));
+      dxf.writeCircle(*dw,
+                      DL_CircleData(screwLocation.x(),
+                                    screwLocation.y(),
+                                    0,
+                                    m_fitterScrewRadius * 1000),
+                      defaultAttribute);
     }
 
     // Mount
-    double center = m_cmLocationX * 1000; // mm
-    dxf.writeCircle(
-        *dw, DL_CircleData(center, 31, 0, 5.8), defaultAttribute);
+    double center = m_cmLocationX * 1000;  // mm
+    double originY = m_mountOriginY * 1000;
+    dxf.writeCircle(*dw, DL_CircleData(center, originY + 31, 0, 5.8), defaultAttribute);
     dxf.writeArc(*dw,
-                 DL_ArcData(center - 12.5, 7, 0, 2.5, 0, 180),
+                 DL_ArcData(center - 12.5, originY + 7, 0, 2.5, 0, 180),
                  defaultAttribute);
     dxf.writeArc(*dw,
-                 DL_ArcData(center - 12.5, 5, 0, 2.5, 180, 0),
+                 DL_ArcData(center - 12.5, originY + 5, 0, 2.5, 180, 0),
                  defaultAttribute);
-    dxf.writeLine(*dw,
-                  DL_LineData(center - 15, 5, 0, center - 15, 7, 0),
-                  defaultAttribute);
-    dxf.writeLine(*dw,
-                  DL_LineData(center - 10, 5, 0, center - 10, 7, 0),
-                  defaultAttribute);
+    dxf.writeLine(
+        *dw,
+        DL_LineData(center - 15, originY + 5, 0, center - 15, originY + 7, 0),
+        defaultAttribute);
+    dxf.writeLine(
+        *dw,
+        DL_LineData(center - 10, originY + 5, 0, center - 10, originY + 7, 0),
+        defaultAttribute);
 
-    dxf.writeArc(*dw,
-                 DL_ArcData(m_cmLocationX * 1000 + 11.5, 6, 0, 2.5, 90, 270),
-                 defaultAttribute);
-    dxf.writeArc(*dw,
-                 DL_ArcData(m_cmLocationX * 1000 + 13.5, 6, 0, 2.5, 270, 90),
-                 defaultAttribute);
-    dxf.writeLine(*dw,
-                  DL_LineData(center + 11.5, 8.5, 0, center + 13.5, 8.5, 0),
-                  defaultAttribute);
-    dxf.writeLine(*dw,
-                  DL_LineData(center + 11.5, 3.5, 0, center + 13.5, 3.5, 0),
-                  defaultAttribute);
-
+    dxf.writeArc(
+        *dw,
+        DL_ArcData(m_cmLocationX * 1000 + 11.5, originY + 6, 0, 2.5, 90, 270),
+        defaultAttribute);
+    dxf.writeArc(
+        *dw,
+        DL_ArcData(m_cmLocationX * 1000 + 13.5, originY + 6, 0, 2.5, 270, 90),
+        defaultAttribute);
+    dxf.writeLine(
+        *dw,
+        DL_LineData(
+            center + 11.5, originY + 8.5, 0, center + 13.5, originY + 8.5, 0),
+        defaultAttribute);
+    dxf.writeLine(
+        *dw,
+        DL_LineData(
+            center + 11.5, originY + 3.5, 0, center + 13.5, originY + 3.5, 0),
+        defaultAttribute);
   }
 
   dw->sectionEnd();

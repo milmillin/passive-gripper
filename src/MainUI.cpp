@@ -26,12 +26,14 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
 
   // Set default point size
   viewer->data_list[LayerId::CenterOfMass].point_size = 8;
-  viewer->data_list[LayerId::Candidates].point_size = 8;
+  viewer->data_list[LayerId::AllContacts].point_size = 8;
+  viewer->data_list[LayerId::FilteredContacts].point_size = 8;
   viewer->data_list[LayerId::BestContacts].point_size = 8;
 
   // Set default
-  viewer->data_list[LayerId::Offset].show_lines = false;
-  viewer->data_list[LayerId::GripperMesh].show_lines = false;
+  // viewer->data_list[LayerId::Offset].show_lines = false;
+  // viewer->data_list[LayerId::GripperMesh].show_lines = false;
+  viewer->data_list[LayerId::AllContacts].is_visible = false;
 
   viewer->core().orthographic = true;
 }
@@ -94,23 +96,30 @@ void MainUI::draw_viewer_menu() {
           "Rod Diameter (m)", &voxelSettings.rodDiameter, 0.001, 0.01);
       ImGui::InputDouble(
           "Fitter Diameter (m)", &voxelSettings.fitterDiameter, 0.001, 0.01);
-      ImGui::InputDouble(
-          "Mount Diameter (m)", &voxelSettings.fitterMountDiameter, 0.001, 0.01);
-      ImGui::InputDouble(
-          "Screw Diameter (m)", &voxelSettings.fitterScrewDiameter, 0.001, 0.01);
-      ImGui::InputDouble(
-          "Grid Spacing for Type B (m)", &voxelSettings.gridSpacing, 0.001, 0.01);
+      ImGui::InputDouble("Mount Diameter (m)",
+                         &voxelSettings.fitterMountDiameter,
+                         0.001,
+                         0.01);
+      ImGui::InputDouble("Screw Diameter (m)",
+                         &voxelSettings.fitterScrewDiameter,
+                         0.001,
+                         0.01);
+      ImGui::InputDouble("Grid Spacing for Type B (m)",
+                         &voxelSettings.gridSpacing,
+                         0.001,
+                         0.01);
       ImGui::InputDouble(
           "Voxel Size for CM (m)", &voxelSettings.voxelSize, 0.001, 0.01);
-      ImGui::InputDouble(
-          "Epsilon (m)", &voxelSettings.epsilon, 0.001, 0.01);
-      if (ImGui::DragFloat2("Grab angle",
+      ImGui::InputDouble("Epsilon (m)", &voxelSettings.epsilon, 0.0001, 0.01);
+      if (ImGui::DragFloat2("Grab angle y, xz (degree)",
                             voxelSettings.grabAngle.data(),
                             1.f,
-                            -360.f,
-                            360.f)) {
+                            -180.f,
+                            180.f)) {
         DrawGrabDirection();
       }
+      ImGui::DragFloat(
+          "Threshold Angle", &voxelSettings.thresholdAngle, 1, 0, 90);
       ImGui::Checkbox("Find Best Contact", &voxelSettings.findBestContact);
       ImGui::PopItemWidth();
 
@@ -125,6 +134,9 @@ void MainUI::draw_viewer_menu() {
         if (ImGui::Button("Save DXF", ImVec2(w - p, 0))) {
           SaveDXF();
         }
+        if (ImGui::Button("Save Result", ImVec2(w - p, 0))) {
+          SaveResult();
+        }
       }
     }
   }
@@ -135,20 +147,25 @@ void MainUI::draw_viewer_menu() {
                           1,
                           2,
                           "%.0f")) {
-      viewer->data(LayerId::Candidates).point_size =
-          viewer->data(LayerId::BestContacts).point_size =
-          viewer->data(LayerId::CenterOfMass).point_size;
+      viewer->data(LayerId::AllContacts).point_size =
+          viewer->data(LayerId::FilteredContacts).point_size =
+              viewer->data(LayerId::BestContacts).point_size =
+                  viewer->data(LayerId::CenterOfMass).point_size;
     }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
     ImGui::Checkbox("Offset Mesh",
                     (bool*)&(viewer->data(LayerId::Offset).is_visible));
-    ImGui::Checkbox("Gripper Direction",
-                    (bool*)&(viewer->data(LayerId::GripperDirection).is_visible));
+    ImGui::Checkbox(
+        "Gripper Direction",
+        (bool*)&(viewer->data(LayerId::GripperDirection).is_visible));
     ImGui::Checkbox("Center of Mass",
                     (bool*)&(viewer->data(LayerId::CenterOfMass).is_visible));
-    ImGui::Checkbox("Candidates",
-                    (bool*)&(viewer->data(LayerId::Candidates).is_visible));
+    ImGui::Checkbox("All Contacts",
+                    (bool*)&(viewer->data(LayerId::AllContacts).is_visible));
+    ImGui::Checkbox(
+        "Filtered Contacts",
+        (bool*)&(viewer->data(LayerId::FilteredContacts).is_visible));
     ImGui::Checkbox("Best Contacts",
                     (bool*)&(viewer->data(LayerId::BestContacts).is_visible));
     ImGui::Checkbox("Gripper",
@@ -180,6 +197,11 @@ void MainUI::UpdateVoxels() {
 void MainUI::SaveDXF() {
   std::string filename = igl::file_dialog_save();
   voxelPipeline->WriteDXF(filename);
+}
+
+void MainUI::SaveResult() {
+  std::string filename = igl::file_dialog_save();
+  voxelPipeline->WriteResult(filename);
 }
 
 void MainUI::DrawGrabDirection() {

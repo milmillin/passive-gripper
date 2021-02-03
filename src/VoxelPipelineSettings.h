@@ -1,18 +1,24 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <iostream>
+
+#include "Geometry.h"
 
 namespace gripper {
 
 struct VoxelPipelineSettings {
-  // Type B contact grid spacing (m)
+  // Contact grid spacing (m)
   double gridSpacing = 0.005;
 
   // Center of mass voxel size (m)
   double voxelSize = gridSpacing;
 
+  // Epsilon (m)
+  double epsilon = 0.001;
+
   // Threshold angle (degree)
-  double thresholdAngle = 30;
+  float thresholdAngle = 20;
 
   // Grab angle (degree)
   Eigen::Vector2f grabAngle = Eigen::Vector2f(0, 0);
@@ -24,11 +30,26 @@ struct VoxelPipelineSettings {
   double fitterMountDiameter = 0.039;
   double fitterScrewDiameter = 0.0044;
 
-  // Epsilon (m)
-  double epsilon = 0.001;
-
   // Solver Settings
   bool findBestContact = false;
 };
+
+// TODO: Change this
+#define FORMAT(os, x) os << #x ": " << (x) << '\n'
+inline std::ostream& operator<<(std::ostream& os,
+                                const VoxelPipelineSettings& s) {
+  FORMAT(os, s.gridSpacing);
+  FORMAT(os, s.voxelSize);
+  FORMAT(os, s.epsilon);
+  FORMAT(os, s.thresholdAngle);
+  FORMAT(os, s.grabAngle(0));
+  FORMAT(os, s.grabAngle(1));
+  FORMAT(os, s.rodDiameter);
+  FORMAT(os, s.fitterDiameter);
+  FORMAT(os, s.fitterMountDiameter);
+  FORMAT(os, s.fitterScrewDiameter);
+  return os;
+}
+#undef FORMAT
 
 }  // namespace gripper

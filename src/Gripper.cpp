@@ -73,7 +73,7 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
 
   // Rotate back
   Eigen::Affine3d rotationInv = rotation.inverse();
-  for (size_t i = 0; i < gripper_V.rows(); i++) {
+  for (Eigen::Index i = 0; i < gripper_V.rows(); i++) {
     Eigen::Vector3d v = gripper_V.row(i);
     gripper_V.row(i) = rotationInv * v;
   }

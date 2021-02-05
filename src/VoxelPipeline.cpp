@@ -339,7 +339,7 @@ void VoxelPipeline::FilterFeasibleContactPoints(
         GetDirectionFromAngle(settings.grabAngle).transpose();
     Eigen::RowVector3f t_epsilon = t_grabDirection * 1e-5;
 #pragma omp for nowait
-    for (ssize_t i = 0; i < m_contactPoints.size(); i++) {
+    for (size_t i = 0; i < m_contactPoints.size(); i++) {
       // Check Floor
       if (m_contactPoints[i].position.y() <=
           m_meshInfo.minimum.y() + settings.rodDiameter / 2)
@@ -514,7 +514,7 @@ void VoxelPipeline::GeneratePoints(const std::vector<ContactPoint>& points,
   out_PC.resize(points.size(), 3);
 
 #pragma omp parallel for
-  for (ssize_t i = 0; i < points.size(); i++) {
+  for (size_t i = 0; i < points.size(); i++) {
     out_P.row(i) = points[i].position.transpose();
     out_PC.row(i) = points[i].isTypeA ? typeAColor : typeBColor;
   }

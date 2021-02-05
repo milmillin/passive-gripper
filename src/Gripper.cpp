@@ -194,7 +194,7 @@ void Gripper::WriteDXF(const std::string& filename) const {
     double center = m_cmLocationX * 1000;  // mm
     double originY = m_mountOriginY * 1000;
     dxf.writeCircle(
-        *dw, DL_CircleData(center, originY + 31, 0, 5.8), defaultAttribute);
+        *dw, DL_CircleData(center, originY + 31, 0, 5.8 / 2), defaultAttribute);
     dxf.writeArc(*dw,
                  DL_ArcData(center - 12.5, originY + 7, 0, 2.5, 0, 180),
                  defaultAttribute);

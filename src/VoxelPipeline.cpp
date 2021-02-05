@@ -67,6 +67,9 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
       m_bestContactPoints.clear();
     }
 
+    // Extend Type A
+    ExtendTypeAContact(settings);
+
     // Generate Gripper
     m_gripper = Gripper(m_bestContactPoints,
                         m_centerOfMass,
@@ -103,7 +106,9 @@ void VoxelPipeline::WriteResult(const std::string& filename) const {
   out << "\n=== PLATE DIMENSION in m\n"
       << m_gripper.plateDimension.x() << ' ' << m_gripper.plateDimension.y()
       << '\n';
-  out << "\n=== RODS (x, y, r) in m ===\n";
+  out << "\n=== PLATE LOCATION in m in rotated space\n"
+      << m_gripper.plateOrigin.transpose() << '\n';
+  out << "\n=== RODS (x, y, l) in m ===\n";
   for (size_t i = 0; i < m_gripper.rodLengths.size(); i++) {
     out << m_gripper.rodLocations.row(i) << ' ' << m_gripper.rodLengths[i]
         << '\n';
@@ -431,6 +436,24 @@ bool VoxelPipeline::CheckManufacturingConstraint(
   return (pa - pb).squaredNorm() >= disSquared &&
          (pb - pc).squaredNorm() >= disSquared &&
          (pc - pa).squaredNorm() >= disSquared;
+}
+
+void VoxelPipeline::ExtendTypeAContact(const VoxelPipelineSettings& settings) {
+  for (auto& c : m_bestContactPoints) {
+    if (!c.isTypeA) continue;
+    Eigen::RowVector3f t_grabDirection =
+        -GetDirectionFromAngle(settings.grabAngle).transpose();
+    Eigen::RowVector3f t_epsilon = t_grabDirection * 1e-5;
+    igl::Hit t_hit;
+    float t = settings.maxExtensionLength;
+    if (m_offset_mesh_intersector.intersectRay(
+            c.position.cast<float>().transpose() + t_epsilon,
+            t_grabDirection,
+            t_hit)) {
+      t = std::min(t, t_hit.t);
+    }
+    c.position += t_grabDirection.cast<double>().transpose() * t;
+  }
 }
 
 void VoxelPipeline::SetViewerData() {

@@ -48,6 +48,8 @@ class VoxelPipeline {
                                     const ContactPoint& b,
                                     const ContactPoint& c);
 
+  void ExtendTypeAContact(const VoxelPipelineSettings& settings);
+
   void SetViewerData();
 
   static void GeneratePoints(const std::vector<ContactPoint>& points,

@@ -95,6 +95,8 @@ void MainUI::draw_viewer_menu() {
       ImGui::InputDouble(
           "Rod Diameter (m)", &voxelSettings.rodDiameter, 0.001, 0.01);
       ImGui::InputDouble(
+          "Rod Clearance (m)", &voxelSettings.rodClearance, 0.0001, 0.001);
+      ImGui::InputDouble(
           "Fitter Diameter (m)", &voxelSettings.fitterDiameter, 0.001, 0.01);
       ImGui::InputDouble("Mount Diameter (m)",
                          &voxelSettings.fitterMountDiameter,

@@ -11,6 +11,7 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
                  const MeshInfo& meshInfo,
                  const Eigen::Affine3d& rotation)
     : m_rodRadius(settings.rodDiameter / 2),
+      m_rodClearance(settings.rodClearance),
       m_fitterRadius(settings.fitterDiameter / 2),
       m_fitterMountRadius(settings.fitterMountDiameter / 2),
       m_fitterScrewRadius(settings.fitterScrewDiameter / 2) {
@@ -172,7 +173,7 @@ void Gripper::WriteDXF(const std::string& filename) const {
                     DL_CircleData(rodLocations.row(i).x() * 1000,
                                   rodLocations.row(i).y() * 1000,
                                   0,
-                                  m_rodRadius * 1000),
+                                  (m_rodRadius + m_rodClearance) * 1000),
                     defaultAttribute);
 
     for (int j = 0; j < 3; j++) {

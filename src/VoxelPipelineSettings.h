@@ -29,6 +29,7 @@ struct VoxelPipelineSettings {
   // Fitter Dimension (m)
   // https://www.mcmaster.com/9604T14/
   double rodDiameter = 0.008;
+  double rodClearance = 0.0002;
   double fitterDiameter = 0.045;
   double fitterMountDiameter = 0.031;
   double fitterScrewDiameter = 0.0034;
@@ -49,6 +50,7 @@ inline std::ostream& operator<<(std::ostream& os,
   FORMAT(os, s.grabAngle(0));
   FORMAT(os, s.grabAngle(1));
   FORMAT(os, s.rodDiameter);
+  FORMAT(os, s.rodClearance);
   FORMAT(os, s.fitterDiameter);
   FORMAT(os, s.fitterMountDiameter);
   FORMAT(os, s.fitterScrewDiameter);

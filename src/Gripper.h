@@ -39,6 +39,7 @@ class Gripper {
   double m_mountOriginY;
 
   double m_rodRadius;
+  double m_rodClearance;
   double m_fitterRadius;
   double m_fitterMountRadius;
   double m_fitterScrewRadius;

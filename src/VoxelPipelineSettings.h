@@ -17,6 +17,9 @@ struct VoxelPipelineSettings {
   // Epsilon (m)
   double epsilon = 0.001;
 
+  // Max Extension Length (m)
+  double maxExtensionLength = 0.02;
+
   // Threshold angle (degree)
   float thresholdAngle = 20;
 
@@ -25,13 +28,13 @@ struct VoxelPipelineSettings {
 
   // Fitter Dimension (m)
   // https://www.mcmaster.com/9604T14/
-  double rodDiameter = 0.012;
-  double fitterDiameter = 0.05;
-  double fitterMountDiameter = 0.039;
-  double fitterScrewDiameter = 0.0044;
+  double rodDiameter = 0.008;
+  double fitterDiameter = 0.045;
+  double fitterMountDiameter = 0.031;
+  double fitterScrewDiameter = 0.0034;
 
   // Solver Settings
-  bool findBestContact = false;
+  bool findBestContact = true;
 };
 
 // TODO: Change this
@@ -41,6 +44,7 @@ inline std::ostream& operator<<(std::ostream& os,
   FORMAT(os, s.gridSpacing);
   FORMAT(os, s.voxelSize);
   FORMAT(os, s.epsilon);
+  FORMAT(os, s.maxExtensionLength);
   FORMAT(os, s.thresholdAngle);
   FORMAT(os, s.grabAngle(0));
   FORMAT(os, s.grabAngle(1));

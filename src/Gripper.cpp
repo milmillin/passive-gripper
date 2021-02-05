@@ -61,10 +61,12 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
   plateDimension = (maxCoord - minCoord).transpose();
   rodLocations -= minCoord.replicate(rodLocations.rows(), 1);
   m_cmLocationX = projectedCenterOfMass.x() - minCoord.x();
+  plateOrigin =
+      Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x());
 
   // TODO: Check backplate thickness
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
-      Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x()),
+      plateOrigin,
       Eigen::Vector3d(0.02, plateDimension.y(), plateDimension.x()));
   gripper_F.block<12, 3>(0, 0) = cube_F;
 
@@ -190,7 +192,8 @@ void Gripper::WriteDXF(const std::string& filename) const {
     // Mount
     double center = m_cmLocationX * 1000;  // mm
     double originY = m_mountOriginY * 1000;
-    dxf.writeCircle(*dw, DL_CircleData(center, originY + 31, 0, 5.8), defaultAttribute);
+    dxf.writeCircle(
+        *dw, DL_CircleData(center, originY + 31, 0, 5.8), defaultAttribute);
     dxf.writeArc(*dw,
                  DL_ArcData(center - 12.5, originY + 7, 0, 2.5, 0, 180),
                  defaultAttribute);

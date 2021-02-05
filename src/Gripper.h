@@ -29,6 +29,7 @@ class Gripper {
   Eigen::MatrixX2d rodLocations;
   std::vector<double> rodLengths;
   Eigen::Vector2d plateDimension;
+  Eigen::Vector3d plateOrigin;
 
  private:
   Eigen::MatrixXd gripper_V;

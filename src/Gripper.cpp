@@ -1,6 +1,7 @@
 #include "Gripper.h"
 
 #include <dxflib/dxflib>
+#include <memory>
 
 namespace gripper {
 

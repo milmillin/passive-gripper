@@ -8,7 +8,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 
 # Add your project files
@@ -32,6 +31,7 @@ else()
     PROPERTIES
     COMPILE_FLAGS "-Wall -Wextra -pedantic"
   )
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
 # Link libraries

@@ -12,3 +12,4 @@ _deps
 /.vs
 /out
 build/
+/CMakeSettings.json

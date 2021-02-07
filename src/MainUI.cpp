@@ -41,14 +41,26 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
 void MainUI::draw_viewer_window() {
   float menu_width = 180.f * menu_scaling();
   ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+
+// Work around for https://github.com/libigl/libigl/issues/1669 at the moment
+#ifdef _MSC_VER
+  ImGui::SetNextWindowSize(ImVec2(300.f, 600.f), ImGuiCond_FirstUseEver);
+#else
   ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSizeConstraints(ImVec2(menu_width, -1.0f),
                                       ImVec2(300.0f, -1.0f));
+#endif
   bool _viewer_menu_visible = true;
+
+#ifdef _MSC_VER
+  ImGui::Begin(
+      "Viewer", &_viewer_menu_visible, ImGuiWindowFlags_NoSavedSettings);
+#else
   ImGui::Begin(
       "Viewer",
       &_viewer_menu_visible,
       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+#endif
   ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
   if (callback_draw_viewer_menu) {
     callback_draw_viewer_menu();

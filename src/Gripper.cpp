@@ -83,7 +83,7 @@ Gripper::Gripper() {}
 
 void Gripper::WriteDXF(const std::string& filename) const {
   DL_Dxf dxf;
-  std::unique_ptr<DL_WriterA> dw(dxf.out(filename.c_str(), DL_Codes::AC1015));
+  std::unique_ptr<DL_WriterA> dw(dxf.out(filename.c_str(), DL_VERSION_R12));
   if (dw == nullptr) {
     std::cout << "Cannot open file " + filename << std::endl;
     return;

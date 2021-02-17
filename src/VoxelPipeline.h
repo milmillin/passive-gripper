@@ -30,6 +30,8 @@ class VoxelPipeline {
 
   void WriteResult(const std::string& filename) const;
 
+  void WriteGripper(const std::string& filename) const;
+
   inline bool IsReady() { return m_isReady; }
 
  private:

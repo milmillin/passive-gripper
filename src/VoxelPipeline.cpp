@@ -116,6 +116,10 @@ void VoxelPipeline::WriteResult(const std::string& filename) const {
   out.close();
 }
 
+void VoxelPipeline::WriteGripper(const std::string& filename) const {
+  igl::writeOBJ(filename, m_gripper.RawV(), m_gripper.F());
+}
+
 void VoxelPipeline::GenerateRotatedMesh(const VoxelPipelineSettings& settings) {
   Eigen::Vector2f grabAngle = settings.grabAngle * DEGREE_TO_RADIAN;
   Eigen::Affine3d t = Eigen::Affine3d::Identity();

@@ -50,7 +50,7 @@ const Eigen::MatrixXi cube_F = (Eigen::MatrixXi(12, 3) <<
 
 Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size);
 
-constexpr size_t cylinderSubdivision = 8;
+constexpr size_t cylinderSubdivision = 16;
 constexpr size_t cylinderNumV = cylinderSubdivision * 2;
 constexpr size_t cylinderNumF = 4 * cylinderSubdivision - 4;
 Eigen::MatrixXd GenerateCylinderV(Eigen::Vector3d p0,

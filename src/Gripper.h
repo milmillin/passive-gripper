@@ -25,6 +25,7 @@ class Gripper {
 
   inline const Eigen::MatrixXd& V() const { return gripper_V; }
   inline const Eigen::MatrixXi& F() const { return gripper_F; }
+  inline const Eigen::MatrixXd& RawV() const { return gripper_raw_V; }
 
   Eigen::MatrixX2d rodLocations;
   std::vector<double> rodLengths;
@@ -34,6 +35,9 @@ class Gripper {
  private:
   Eigen::MatrixXd gripper_V;
   Eigen::MatrixXi gripper_F;
+
+  Eigen::MatrixXd gripper_raw_V;
+  Eigen::MatrixXd gripper_raw_F;
 
   double m_cmLocationX;
   double m_mountOriginY;

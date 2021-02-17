@@ -66,15 +66,27 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
       Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x());
 
   // TODO: Check backplate thickness
+  const double plateThickness = 0.015;
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
       plateOrigin,
-      Eigen::Vector3d(0.02, plateDimension.y(), plateDimension.x()));
+      Eigen::Vector3d(plateThickness, plateDimension.y(), plateDimension.x()));
   gripper_F.block<12, 3>(0, 0) = cube_F;
+
+  // Compute gripper when lie on xz plane with center mount hole at origin
+  Eigen::Affine3d t = Eigen::Affine3d::Identity();
+  t.rotate(Eigen::AngleAxisd(-EIGEN_PI / 2, Eigen::Vector3d::UnitZ()));
+  Eigen::Vector3d mountHole(meshInfo.maximum.x() + plateThickness,
+                            m_mountOriginY + 0.031,
+                            projectedCenterOfMass.x());
+  mountHole = t * mountHole;
+  t.pretranslate(-mountHole);
+  gripper_raw_V.resize(gripper_V.rows(), 3);
 
   // Rotate back
   Eigen::Affine3d rotationInv = rotation.inverse();
   for (Eigen::Index i = 0; i < gripper_V.rows(); i++) {
     Eigen::Vector3d v = gripper_V.row(i);
+    gripper_raw_V.row(i) = t * v;
     gripper_V.row(i) = rotationInv * v;
   }
 }

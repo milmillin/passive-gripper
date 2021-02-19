@@ -66,7 +66,7 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
       Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x());
 
   // TODO: Check backplate thickness
-  const double plateThickness = 0.015;
+  const double plateThickness = 0.00635;
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
       plateOrigin,
       Eigen::Vector3d(plateThickness, plateDimension.y(), plateDimension.x()));

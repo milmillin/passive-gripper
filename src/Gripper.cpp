@@ -76,7 +76,7 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
   Eigen::Affine3d t = Eigen::Affine3d::Identity();
   t.rotate(Eigen::AngleAxisd(-EIGEN_PI / 2, Eigen::Vector3d::UnitZ()));
   Eigen::Vector3d mountHole(meshInfo.maximum.x() + plateThickness,
-                            m_mountOriginY + 0.031,
+                            minCoord.y() + m_mountOriginY + 0.031,
                             projectedCenterOfMass.x());
   mountHole = t * mountHole;
   t.pretranslate(-mountHole);

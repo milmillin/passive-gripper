@@ -2,3 +2,6 @@
 	path = external/libigl
 	url = https://github.com/libigl/libigl.git
 	ignore = dirty
+[submodule "external/cxxopts"]
+	path = external/cxxopts
+	url = https://github.com/jarro2783/cxxopts

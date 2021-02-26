@@ -23,6 +23,9 @@ class Gripper {
 
   void WriteDXF(const std::string& filename) const;
 
+  // Assumes grab angle is 0.
+  void WriteRAPID(const std::string& filename) const;
+
   inline const Eigen::MatrixXd& V() const { return gripper_V; }
   inline const Eigen::MatrixXi& F() const { return gripper_F; }
   inline const Eigen::MatrixXd& RawV() const { return gripper_raw_V; }
@@ -33,11 +36,14 @@ class Gripper {
   Eigen::Vector3d plateOrigin;
 
  private:
+
   Eigen::MatrixXd gripper_V;
   Eigen::MatrixXi gripper_F;
 
   Eigen::MatrixXd gripper_raw_V;
   Eigen::MatrixXd gripper_raw_F;
+
+  Eigen::Vector3d m_mountHole;
 
   double m_cmLocationX;
   double m_mountOriginY;

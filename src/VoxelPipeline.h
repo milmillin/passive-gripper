@@ -27,9 +27,11 @@ class VoxelPipeline {
   inline void WriteDXF(const std::string& filename) const {
     m_gripper.WriteDXF(filename);
   }
+  inline void WriteRAPID(const std::string& filename) const {
+    m_gripper.WriteRAPID(filename);
+  }
 
   void WriteResult(const std::string& filename) const;
-
   void WriteGripper(const std::string& filename) const;
 
   inline bool IsReady() { return m_isReady; }

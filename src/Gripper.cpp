@@ -1,7 +1,10 @@
 #include "Gripper.h"
 
 #include <dxflib/dxflib>
+#include <iomanip>
+#include <iostream>
 #include <memory>
+#include <sstream>
 
 namespace gripper {
 
@@ -66,7 +69,6 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
       Eigen::Vector3d(meshInfo.maximum.x(), minCoord.y(), minCoord.x());
 
   // TODO: Check backplate thickness
-  const double plateThickness = 0.00635;
   gripper_V.block<8, 3>(0, 0) = GenerateCubeV(
       plateOrigin,
       Eigen::Vector3d(plateThickness, plateDimension.y(), plateDimension.x()));
@@ -78,6 +80,7 @@ Gripper::Gripper(const std::vector<ContactPoint>& contactPoints,
   Eigen::Vector3d mountHole(meshInfo.maximum.x() + plateThickness,
                             minCoord.y() + m_mountOriginY + 0.031,
                             projectedCenterOfMass.x());
+  m_mountHole = mountHole;
   mountHole = t * mountHole;
   t.pretranslate(-mountHole);
   gripper_raw_V.resize(gripper_V.rows(), 3);
@@ -249,6 +252,48 @@ void Gripper::WriteDXF(const std::string& filename) const {
 
   dw->dxfEOF();
   dw->close();
+}
+
+static std::string ToString(const Eigen::Vector3d& v) {
+  std::stringstream ss;
+  ss << std::setprecision(9) << v.x() << "," << v.y() << "," << v.z();
+  return ss.str();
+}
+
+void Gripper::WriteRAPID(const std::string& filename) const {
+  double maxLength = 0;
+  for (double l : rodLengths)
+    maxLength = std::max(maxLength, l);
+
+  std::cout << "mountHole: " << m_mountHole << "\n";
+
+  Eigen::Vector3d aquisition = m_mountHole;
+  Eigen::Vector3d lineup =
+      m_mountHole + Eigen::Vector3d(maxLength + 0.01, 0, 0);
+  Eigen::Vector3d lift = m_mountHole + Eigen::Vector3d(0, 0.075, 0);
+
+  Eigen::Matrix3d t;
+  t.setZero();
+  t(0, 0) = -1000;
+  t(1, 2) = 1000;
+  t(2, 1) = 1000;
+
+  Eigen::Vector3d offset(498, -50, 96);
+
+  Eigen::Vector3d r_aquisition = t * aquisition + offset;
+  Eigen::Vector3d r_lineup = t * lineup + offset;
+  Eigen::Vector3d r_lift = t * lift + offset;
+
+  std::ofstream myfile(filename);
+  myfile << "    CONST robtarget TargetLineup:=[[" << ToString(r_lineup)
+         << "],[0,0.707106781,0,0.707106781],[-1,-1,-2,1],"
+            "[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];\n";
+  myfile << "    CONST robtarget TargetAqusition:=[[" << ToString(r_aquisition)
+         << "],[0,0.707106781,0,0.707106781],[-1,-1,-2,1],"
+            "[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];\n";
+  myfile << "    CONST robtarget TargetLift:=[[" << ToString(r_lift)
+         << "],[0,0.707106781,0,0.707106781],[-1,-1,-2,1],"
+            "[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];\n";
 }
 
 }  // namespace gripper

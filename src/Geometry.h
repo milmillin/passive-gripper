@@ -60,4 +60,6 @@ Eigen::MatrixXi GenerateCylinderF();
 
 const Eigen::MatrixXi cylinder_F = GenerateCylinderF();
 
+const double plateThickness = 0.00635;
+
 }  // namespace gripper

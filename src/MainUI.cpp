@@ -154,6 +154,9 @@ void MainUI::draw_viewer_menu() {
         if (ImGui::Button("Save Gripper OBJ", ImVec2(w - p, 0))) {
           SaveGripper();        
         }
+        if (ImGui::Button("Save RAPID", ImVec2(w - p, 0))) {
+          SaveRAPID();        
+        }
       }
     }
   }
@@ -224,6 +227,11 @@ void MainUI::SaveResult() {
 void MainUI::SaveGripper() {
   std::string filename = igl::file_dialog_save();
   voxelPipeline->WriteGripper(filename);
+}
+
+void MainUI::SaveRAPID() {
+  std::string filename = igl::file_dialog_save();
+  voxelPipeline->WriteRAPID(filename);
 }
 
 void MainUI::DrawGrabDirection() {

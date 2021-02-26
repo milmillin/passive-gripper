@@ -39,6 +39,7 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void draw_viewer_window() override;
   void draw_viewer_menu() override;
   bool post_load() override;
+  bool key_down(int key, int modifier) override;
   inline bool pre_draw() override;
   inline bool post_draw() override;
 
@@ -46,6 +47,16 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) {
     return viewer->data(layerId);
   }
+  inline Eigen::MatrixXd& GetMeshVertices() {
+    return viewer->data(LayerId::Mesh).V;
+  }
+  inline Eigen::MatrixXi& GetMeshFaces() {
+    return viewer->data(LayerId::Mesh).F;
+  }
+
+  // VoxelPipeline
+  std::unique_ptr<VoxelPipeline> voxelPipeline;
+  VoxelPipelineSettings voxelSettings;
 
  private:
   void UpdateVoxels();
@@ -55,20 +66,9 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void SaveGripper();
   void SaveRAPID();
 
-  inline Eigen::MatrixXd& GetMeshVertices() {
-    return viewer->data(LayerId::Mesh).V;
-  }
-  inline Eigen::MatrixXi& GetMeshFaces() {
-    return viewer->data(LayerId::Mesh).F;
-  }
-
   // Mesh
   bool meshLoaded;
   MeshInfo meshInfo;
-
-  // VoxelPipeline
-  std::unique_ptr<VoxelPipeline> voxelPipeline;
-  VoxelPipelineSettings voxelSettings;
 
   // Task
   std::deque<std::pair<std::unique_ptr<std::atomic<bool>>,

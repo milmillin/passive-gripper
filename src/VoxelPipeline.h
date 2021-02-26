@@ -31,6 +31,8 @@ class VoxelPipeline {
     m_gripper.WriteRAPID(filename);
   }
 
+  inline const Gripper& GetGripper() const { return m_gripper; }
+
   void WriteResult(const std::string& filename) const;
   void WriteGripper(const std::string& filename) const;
 

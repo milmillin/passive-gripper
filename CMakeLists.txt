@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(passive-gripper)
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -34,12 +34,6 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
-# Link libraries
-set(LINK_LIBS igl::core igl::opengl_glfw igl::opengl_glfw_imgui igl::embree embree)
-if (NOT MSVC)
-    list(APPEND LINK_LIBS stdc++fs)
-endif()
-
 # Link OpenMP
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -50,9 +44,16 @@ endif()
 
 # Link libigl
 option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
+option(LIBIGL_WITH_PNG               "Use PNG"            ON)
 option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
 option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use IMGUI"          ON)
 option(LIBIGL_WITH_EMBREE            "Use Embree"         ON)
+
+# Link libraries
+set(LINK_LIBS igl::core igl::opengl_glfw igl::opengl_glfw_imgui igl::embree igl::png embree)
+if (NOT MSVC)
+    list(APPEND LINK_LIBS stdc++fs)
+endif()
 
 find_package(LIBIGL REQUIRED QUIET)
 
@@ -62,6 +63,9 @@ set(SRCFILES ${SRCFILES}
     external/dxflib/include/dxflib/src/dl_dxf.cpp
     external/dxflib/include/dxflib/src/dl_writer_ascii.cpp
 )
+
+# cxxopts
+include_directories(external/cxxopts/include)
 
 # Link Embree
 find_package(embree 3 CONFIG REQUIRED)

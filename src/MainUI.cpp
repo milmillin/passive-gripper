@@ -1,7 +1,9 @@
 #include "MainUI.h"
 
+#include <igl/png/writePNG.h>
 #include <imgui.h>
 #include "Geometry.h"
+#include "Utils.h"
 
 namespace gripper {
 
@@ -34,6 +36,11 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   // viewer->data_list[LayerId::Offset].show_lines = false;
   // viewer->data_list[LayerId::GripperMesh].show_lines = false;
   viewer->data_list[LayerId::AllContacts].is_visible = false;
+  viewer->data_list[LayerId::BestContacts].is_visible = false;
+  viewer->data_list[LayerId::CenterOfMass].is_visible = false;
+  viewer->data_list[LayerId::FilteredContacts].is_visible = false;
+  viewer->data_list[LayerId::Offset].is_visible = false;
+  viewer->data_list[LayerId::GripperDirection].is_visible = false;
 
   viewer->core().orthographic = true;
 }
@@ -267,6 +274,16 @@ bool MainUI::post_load() {
   meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
   voxelPipeline.reset();
   DrawGrabDirection();
+  return true;
+}
+
+bool MainUI::key_down(int key, int modifier) {
+  if (key == '1') {
+    std::cout << "Writing to PNG" << std::endl;
+
+    utils::CaptureScreen(
+        viewer->core(), viewer->data_list, 1280, 800, "asdf.png");
+  }
   return true;
 }
 

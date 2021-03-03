@@ -89,6 +89,10 @@ std::pair<int, double> EvaluateContactPoints(
     const ContactPoint& c2,
     const ContactPoint& c3) {
 
+  Eigen::Vector3d p12 = (c2.position - c1.position);
+  Eigen::Vector3d p13 = (c3.position - c1.position);
+  double orient = p12.z() * p13.x() - p13.z() * p12.x();
+
   Eigen::Vector3d p1 = (c1.position - centerOfMass).normalized();
   Eigen::Vector3d p2 = (c2.position - centerOfMass).normalized();
   Eigen::Vector3d p3 = (c3.position - centerOfMass).normalized();
@@ -98,7 +102,7 @@ std::pair<int, double> EvaluateContactPoints(
   auto res3 = AngleFromSideToGravity(p3, p1);
 
   // Gravity not in triangle
-  if (res1.first != res2.first || res1.first != res3.first) {
+  if (res1.first != res2.first || res1.first != res3.first || res1.first != orient < 0) {
     return {-1, 0.};      
   }
   

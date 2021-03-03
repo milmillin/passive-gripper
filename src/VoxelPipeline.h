@@ -10,6 +10,7 @@
 #include "Gripper.h"
 #include "MainUI.h"
 #include "VoxelPipelineSettings.h"
+#include "Utils.h"
 
 namespace gripper {
 
@@ -23,6 +24,8 @@ class VoxelPipeline {
 
   void UpdateSettings(const VoxelPipelineSettings& settings,
                       bool isInit = false);
+
+  void RunPerformanceTest(VoxelPipelineSettings settings, int lo, int hi, int step);
 
   inline void WriteDXF(const std::string& filename) const {
     m_gripper.WriteDXF(filename);
@@ -86,6 +89,10 @@ class VoxelPipeline {
   std::vector<ContactPoint> m_contactPoints;
   std::vector<ContactPoint> m_filteredContactPoints;
   std::vector<ContactPoint> m_bestContactPoints;
+  std::vector<ContactPoint> m_rawBestContactPoints;
+
+  int m_bestNumA;
+  double m_bestAngle;
 
   Eigen::MatrixXd m_contactPoints_P;
   Eigen::MatrixXd m_contactPoints_PC;

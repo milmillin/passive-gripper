@@ -3,11 +3,16 @@
 #include <igl/offset_surface.h>
 #include <omp.h>
 #include <iostream>
+#include <chrono>
 
 #include "Geometry.h"
 #include "Gripper.h"
 
 namespace gripper {
+
+static Eigen::RowVector3d typeAColor = orange;
+static Eigen::RowVector3d typeBColor = orange;
+static Eigen::RowVector3d centerOfMassColor = red;
 
 VoxelPipeline::VoxelPipeline(MainUI* mainUI,
                              const Eigen::MatrixXd& mesh_V,
@@ -66,6 +71,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
     } else {
       m_bestContactPoints.clear();
     }
+    m_rawBestContactPoints = m_bestContactPoints;
 
     // Extend Type A
     ExtendTypeAContact(settings);
@@ -98,6 +104,28 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   m_isReady = true;
 }
 
+void VoxelPipeline::RunPerformanceTest(VoxelPipelineSettings settings, int lo, int hi, int step) {
+  using namespace std::chrono;
+
+  std::cout << "Running Performance Test\nnBlock,time (ms),bestA,bestAngle" << std::endl;
+
+  double maxWidth = m_meshInfo.size.maxCoeff() + settings.rodDiameter;
+
+  for (int i = lo; i <= hi; i += step) {
+    settings.gridSpacing = maxWidth / i;
+    settings.voxelSize = maxWidth / i;
+
+    auto start = high_resolution_clock::now();
+    UpdateSettings(settings, true);
+    auto stop = high_resolution_clock::now();
+    auto duration =
+        duration_cast<milliseconds>(stop - start);
+    std::cout << i << "," << duration.count() << "," << m_bestNumA << ","
+              << m_bestAngle << std::endl;
+  }
+  std::cout << "Done" << std::endl;
+}
+
 void VoxelPipeline::WriteResult(const std::string& filename) const {
   std::ofstream out;
   out.open(filename);
@@ -112,6 +140,24 @@ void VoxelPipeline::WriteResult(const std::string& filename) const {
   for (size_t i = 0; i < m_gripper.rodLengths.size(); i++) {
     out << m_gripper.rodLocations.row(i) << ' ' << m_gripper.rodLengths[i]
         << '\n';
+  }
+  out << "\n=== CM (x, y, l) in m ===\n";
+  Eigen::RowVector3d rotCM = (m_rotation * m_centerOfMass).transpose() -
+                             m_gripper.plateOrigin.transpose();
+  out << Eigen::RowVector3d(rotCM.z(), rotCM.y(), -rotCM.x()) << "\n";
+
+  if (m_rawBestContactPoints.size() == 3) {
+    out << "\n=== Latex ===\n";
+    for (int i = 0; i < 3; i++) {
+      Eigen::RowVector3d x =
+          (m_rawBestContactPoints[i].position - m_centerOfMass).normalized();
+      out << "\\pgfmathsetmacro{\\" << (char)(i + 'P') << "x}{" << x.z()
+          << "}\n";
+      out << "\\pgfmathsetmacro{\\" << (char)(i + 'P') << "y}{" << x.x()
+          << "}\n";
+      out << "\\pgfmathsetmacro{\\" << (char)(i + 'P') << "z}{" << x.y()
+          << "}\n";
+    }
   }
   out.close();
 }
@@ -418,6 +464,9 @@ void VoxelPipeline::FindBestContactPoints(
     }
   }
 
+  m_bestNumA = bestStability.first;
+  m_bestAngle = bestStability.second;
+
   m_bestContactPoints.clear();
   for (int i = 0; i < 3; i++) {
     if (bestIndex(i) != -1)
@@ -463,9 +512,6 @@ void VoxelPipeline::ExtendTypeAContact(const VoxelPipelineSettings& settings) {
 }
 
 void VoxelPipeline::SetViewerData() {
-  static Eigen::RowVector3d centerOfMassColor =
-      Eigen::RowVector3d(130, 4, 1) / 255;
-
   m_mainUI->viewerDataMutex.lock();
 
   // Candidate Layer
@@ -499,7 +545,7 @@ void VoxelPipeline::SetViewerData() {
   data_gripper.clear();
   data_gripper.set_face_based(true);
   data_gripper.set_mesh(m_gripper.V(), m_gripper.F());
-  data_gripper.set_colors(Eigen::RowVector3d::Constant(0.4));
+  data_gripper.set_colors(Eigen::RowVector3d::Constant(0.75));
 
   // Offset Mesh Layer
   igl::opengl::ViewerData& data_offset =
@@ -507,15 +553,13 @@ void VoxelPipeline::SetViewerData() {
   data_offset.clear();
   data_offset.set_mesh(m_offset_mesh_V, m_offset_mesh_F);
 
+
   m_mainUI->viewerDataMutex.unlock();
 }
 
 void VoxelPipeline::GeneratePoints(const std::vector<ContactPoint>& points,
                                    Eigen::MatrixXd& out_P,
                                    Eigen::MatrixXd& out_PC) {
-  static Eigen::RowVector3d typeAColor = Eigen::RowVector3d(219, 76, 178) / 255;
-  static Eigen::RowVector3d typeBColor = Eigen::RowVector3d(239, 126, 50) / 255;
-
   out_P.resize(points.size(), 3);
   out_PC.resize(points.size(), 3);
 

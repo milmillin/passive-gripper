@@ -33,14 +33,17 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   viewer->data_list[LayerId::BestContacts].point_size = 8;
 
   // Set default
-  // viewer->data_list[LayerId::Offset].show_lines = false;
-  // viewer->data_list[LayerId::GripperMesh].show_lines = false;
-  viewer->data_list[LayerId::AllContacts].is_visible = false;
-  viewer->data_list[LayerId::BestContacts].is_visible = false;
-  viewer->data_list[LayerId::CenterOfMass].is_visible = false;
-  viewer->data_list[LayerId::FilteredContacts].is_visible = false;
+  viewer->data_list[LayerId::Mesh].is_visible = true;
   viewer->data_list[LayerId::Offset].is_visible = false;
   viewer->data_list[LayerId::GripperDirection].is_visible = false;
+  viewer->data_list[LayerId::CenterOfMass].is_visible = false;
+  viewer->data_list[LayerId::AllContacts].is_visible = false;
+  viewer->data_list[LayerId::FilteredContacts].is_visible = false;
+  viewer->data_list[LayerId::BestContacts].is_visible = false;
+  viewer->data_list[LayerId::GripperMesh].is_visible = true;
+
+  viewer->data_list[LayerId::GripperMesh].shininess = 10;
+  viewer->data_list[LayerId::Mesh].shininess = 10;
 
   viewer->core().orthographic = true;
 }
@@ -132,15 +135,12 @@ void MainUI::draw_viewer_menu() {
       ImGui::InputDouble(
           "Voxel Size for CM (m)", &voxelSettings.voxelSize, 0.001, 0.01);
       ImGui::InputDouble("Epsilon (m)", &voxelSettings.epsilon, 0.0001, 0.01);
-      if (ImGui::DragFloat2("Grab angle y, xz (degree)",
-                            voxelSettings.grabAngle.data(),
-                            1.f,
-                            -180.f,
-                            180.f)) {
+      if (ImGui::InputFloat2(
+              "Grab angle y, xz (degree)", voxelSettings.grabAngle.data(), 0)) {
         DrawGrabDirection();
       }
-      ImGui::DragFloat(
-          "Threshold Angle", &voxelSettings.thresholdAngle, 1, 0, 90);
+      ImGui::InputFloat(
+          "Threshold Angle", &voxelSettings.thresholdAngle, 1, 1, 0);
       ImGui::Checkbox("Find Best Contact", &voxelSettings.findBestContact);
       ImGui::PopItemWidth();
 
@@ -159,12 +159,40 @@ void MainUI::draw_viewer_menu() {
           SaveResult();
         }
         if (ImGui::Button("Save Gripper OBJ", ImVec2(w - p, 0))) {
-          SaveGripper();        
+          SaveGripper();
         }
         if (ImGui::Button("Save RAPID", ImVec2(w - p, 0))) {
-          SaveRAPID();        
+          SaveRAPID();
+        }
+        if (ImGui::Button("Save Offset Mesh", ImVec2(w - p, 0))) {
+          std::string filename = igl::file_dialog_save();
+          igl::writeOBJ(filename,
+                        viewer->data(LayerId::Offset).V,
+                        viewer->data(LayerId::Offset).F);
         }
       }
+    }
+  }
+  if (ImGui::CollapsingHeader("Performance Test",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::InputInt2("Number of Blocks", perfSettings);
+    ImGui::InputInt("Step", &perfSettings[2], 1, 5);
+    if (voxelPipeline != nullptr && voxelPipeline->IsReady()) {
+      if (ImGui::Button("Run Perf Test", ImVec2(w - p, 0))) {
+        RunPerformanceTest();
+      }
+    } else {
+      ImGui::Text("Busy...");
+    }
+  }
+  if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::InputFloat2("Camera angle y, xz (degree)", angle, 0);
+    if (ImGui::Button("Update View", ImVec2(w - p, 0))) {
+      UpdateCameraAngle(angle[0], angle[1]);
+    }
+    ImGui::InputInt2("Render Size", renderSize);
+    if (ImGui::Button("Render", ImVec2(w - p, 0))) {
+      Render();
     }
   }
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -178,6 +206,13 @@ void MainUI::draw_viewer_menu() {
           viewer->data(LayerId::FilteredContacts).point_size =
               viewer->data(LayerId::BestContacts).point_size =
                   viewer->data(LayerId::CenterOfMass).point_size;
+    }
+
+    if (ImGui::Checkbox("Show lines",
+                        (bool*)&(viewer->data(LayerId::Mesh).show_lines))) {
+      viewer->data(LayerId::GripperMesh).show_lines =
+          viewer->data(LayerId::Offset).show_lines =
+              viewer->data(LayerId::Mesh).show_lines;
     }
 
     ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
@@ -221,6 +256,19 @@ void MainUI::UpdateVoxels() {
                                std::unique_ptr<std::thread>(task))));
 }
 
+void MainUI::RunPerformanceTest() {
+  // Update using new thread
+  auto done = new std::atomic<bool>(false);
+  auto task = new std::thread([=] {
+    voxelPipeline->RunPerformanceTest(
+        voxelSettings, perfSettings[0], perfSettings[1], perfSettings[2]);
+    done->store(true);
+  });
+  tasks.push_back(
+      std::move(std::make_pair(std::unique_ptr<std::atomic<bool>>(done),
+                               std::unique_ptr<std::thread>(task))));
+}
+
 void MainUI::SaveDXF() {
   std::string filename = igl::file_dialog_save();
   voxelPipeline->WriteDXF(filename);
@@ -239,6 +287,21 @@ void MainUI::SaveGripper() {
 void MainUI::SaveRAPID() {
   std::string filename = igl::file_dialog_save();
   voxelPipeline->WriteRAPID(filename);
+}
+
+void MainUI::UpdateCameraAngle(float angle0, float angle1) {
+  viewer->core().trackball_angle =
+      Eigen::AngleAxisf(angle1 * DEGREE_TO_RADIAN, Eigen::Vector3f::UnitX()) *
+      Eigen::AngleAxisf(angle0 * DEGREE_TO_RADIAN, Eigen::Vector3f::UnitY());
+}
+
+void MainUI::Render() {
+  std::string filename = igl::file_dialog_save();
+  utils::CaptureScreen(viewer->core(),
+                       viewer->data_list,
+                       renderSize[0],
+                       renderSize[1],
+                       filename);
 }
 
 void MainUI::DrawGrabDirection() {
@@ -274,16 +337,10 @@ bool MainUI::post_load() {
   meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
   voxelPipeline.reset();
   DrawGrabDirection();
-  return true;
-}
-
-bool MainUI::key_down(int key, int modifier) {
-  if (key == '1') {
-    std::cout << "Writing to PNG" << std::endl;
-
-    utils::CaptureScreen(
-        viewer->core(), viewer->data_list, 1280, 800, "asdf.png");
-  }
+  viewer->data(LayerId::Mesh)
+      .uniform_colors((gold * 0.3).transpose(),
+                      (Eigen::Vector3d)gold.transpose(),
+                      Eigen::Vector3d::Zero());
   return true;
 }
 

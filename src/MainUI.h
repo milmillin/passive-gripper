@@ -39,7 +39,6 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void draw_viewer_window() override;
   void draw_viewer_menu() override;
   bool post_load() override;
-  bool key_down(int key, int modifier) override;
   inline bool pre_draw() override;
   inline bool post_draw() override;
 
@@ -60,15 +59,28 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
 
  private:
   void UpdateVoxels();
+  void RunPerformanceTest();
   void DrawGrabDirection();
   void SaveDXF();
   void SaveResult();
   void SaveGripper();
   void SaveRAPID();
 
+  void UpdateCameraAngle(float angle0, float angle1);
+  void Render();
+
   // Mesh
   bool meshLoaded;
   MeshInfo meshInfo;
+
+  // Perf Test
+  // number of blocks in the longest dimension
+  // lo, hi, step
+  int perfSettings[3] = {30, 100, 5};
+
+  // Camera
+  float angle[2] = {75, 10};
+  int renderSize[2] = {1080, 1080};
 
   // Task
   std::deque<std::pair<std::unique_ptr<std::atomic<bool>>,

@@ -28,7 +28,8 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
 
   // Set default point size
   viewer->data_list[LayerId::CenterOfMass].point_size = 8;
-  viewer->data_list[LayerId::AllContacts].point_size = 8;
+  viewer->data_list[LayerId::TypeAContacts].point_size = 8;
+  viewer->data_list[LayerId::TypeBContacts].point_size = 8;
   viewer->data_list[LayerId::FilteredContacts].point_size = 8;
   viewer->data_list[LayerId::BestContacts].point_size = 8;
 
@@ -37,10 +38,12 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   viewer->data_list[LayerId::Offset].is_visible = false;
   viewer->data_list[LayerId::GripperDirection].is_visible = false;
   viewer->data_list[LayerId::CenterOfMass].is_visible = false;
-  viewer->data_list[LayerId::AllContacts].is_visible = false;
+  viewer->data_list[LayerId::TypeAContacts].is_visible = false;
+  viewer->data_list[LayerId::TypeBContacts].is_visible = false;
   viewer->data_list[LayerId::FilteredContacts].is_visible = false;
   viewer->data_list[LayerId::BestContacts].is_visible = false;
   viewer->data_list[LayerId::GripperMesh].is_visible = true;
+  viewer->data_list[LayerId::ContactRay].is_visible = false;
 
   viewer->data_list[LayerId::GripperMesh].shininess = 10;
   viewer->data_list[LayerId::Mesh].shininess = 10;
@@ -132,6 +135,10 @@ void MainUI::draw_viewer_menu() {
                          &voxelSettings.gridSpacing,
                          0.001,
                          0.01);
+      ImGui::InputDouble("Marching Cube Size (m)",
+                         &voxelSettings.marchingCubeSize,
+                         0.001,
+                         0.01);
       ImGui::InputDouble(
           "Voxel Size for CM (m)", &voxelSettings.voxelSize, 0.001, 0.01);
       ImGui::InputDouble("Epsilon (m)", &voxelSettings.epsilon, 0.0001, 0.01);
@@ -201,11 +208,12 @@ void MainUI::draw_viewer_menu() {
                           &(viewer->data(LayerId::CenterOfMass).point_size),
                           1,
                           2,
-                          "%.0f")) {
-      viewer->data(LayerId::AllContacts).point_size =
-          viewer->data(LayerId::FilteredContacts).point_size =
-              viewer->data(LayerId::BestContacts).point_size =
-                  viewer->data(LayerId::CenterOfMass).point_size;
+                          "%.1f")) {
+      float pointSize = viewer->data(LayerId::CenterOfMass).point_size;
+      viewer->data(LayerId::TypeAContacts).point_size = pointSize;
+      viewer->data(LayerId::TypeBContacts).point_size = pointSize;
+      viewer->data(LayerId::FilteredContacts).point_size = pointSize;
+      viewer->data(LayerId::BestContacts).point_size = pointSize;
     }
 
     if (ImGui::Checkbox("Show lines",
@@ -223,8 +231,10 @@ void MainUI::draw_viewer_menu() {
         (bool*)&(viewer->data(LayerId::GripperDirection).is_visible));
     ImGui::Checkbox("Center of Mass",
                     (bool*)&(viewer->data(LayerId::CenterOfMass).is_visible));
-    ImGui::Checkbox("All Contacts",
-                    (bool*)&(viewer->data(LayerId::AllContacts).is_visible));
+    ImGui::Checkbox("All Type A Contacts",
+                    (bool*)&(viewer->data(LayerId::TypeAContacts).is_visible));
+    ImGui::Checkbox("All Type B Contacts",
+                    (bool*)&(viewer->data(LayerId::TypeBContacts).is_visible));
     ImGui::Checkbox(
         "Filtered Contacts",
         (bool*)&(viewer->data(LayerId::FilteredContacts).is_visible));
@@ -232,6 +242,13 @@ void MainUI::draw_viewer_menu() {
                     (bool*)&(viewer->data(LayerId::BestContacts).is_visible));
     ImGui::Checkbox("Gripper",
                     (bool*)&(viewer->data(LayerId::GripperMesh).is_visible));
+    ImGui::Checkbox("Contact Ray",
+                    (bool*)&(viewer->data(LayerId::ContactRay).is_visible));
+    ImGui::InputFloat("Contact Ray Size",
+                      &(viewer->data(LayerId::ContactRay).line_width),
+                      0.5,
+                      2,
+                      "%.1f");
 
     ImGui::PopID();
   }

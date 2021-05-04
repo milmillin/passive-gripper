@@ -61,6 +61,7 @@ class VoxelPipeline {
 
   void SetViewerData();
 
+  void GenerateContactPoints();
   static void GeneratePoints(const std::vector<ContactPoint>& points,
                              Eigen::MatrixXd& out_P,
                              Eigen::MatrixXd& out_PC);
@@ -94,12 +95,15 @@ class VoxelPipeline {
   int m_bestNumA;
   double m_bestAngle;
 
-  Eigen::MatrixXd m_contactPoints_P;
-  Eigen::MatrixXd m_contactPoints_PC;
+  Eigen::MatrixXd m_contactPointsA_P;
+  Eigen::MatrixXd m_contactPointsB_P;
   Eigen::MatrixXd m_filteredContactPoints_P;
   Eigen::MatrixXd m_filteredContactPoints_PC;
   Eigen::MatrixXd m_bestContactPoints_P;
   Eigen::MatrixXd m_bestContactPoints_PC;
+
+  Eigen::MatrixXd m_contactRay_P;
+  Eigen::MatrixXi m_contactRay_E;
 
   Gripper m_gripper;
 };

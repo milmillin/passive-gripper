@@ -2,17 +2,18 @@
 
 #include <igl/offset_surface.h>
 #include <omp.h>
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 #include "Geometry.h"
 #include "Gripper.h"
 
 namespace gripper {
 
-static Eigen::RowVector3d typeAColor = orange;
-static Eigen::RowVector3d typeBColor = orange;
+static Eigen::RowVector3d typeAColor = blue;
+static Eigen::RowVector3d typeBColor = purple;
 static Eigen::RowVector3d centerOfMassColor = red;
+static Eigen::RowVector3d contactRayColor = white;
 
 VoxelPipeline::VoxelPipeline(MainUI* mainUI,
                              const Eigen::MatrixXd& mesh_V,
@@ -88,7 +89,7 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
 
   if (isInit || requireUpdate) {
     // Compute Points
-    GeneratePoints(m_contactPoints, m_contactPoints_P, m_contactPoints_PC);
+    GenerateContactPoints();
     GeneratePoints(m_filteredContactPoints,
                    m_filteredContactPoints_P,
                    m_filteredContactPoints_PC);
@@ -104,10 +105,14 @@ void VoxelPipeline::UpdateSettings(const VoxelPipelineSettings& settings,
   m_isReady = true;
 }
 
-void VoxelPipeline::RunPerformanceTest(VoxelPipelineSettings settings, int lo, int hi, int step) {
+void VoxelPipeline::RunPerformanceTest(VoxelPipelineSettings settings,
+                                       int lo,
+                                       int hi,
+                                       int step) {
   using namespace std::chrono;
 
-  std::cout << "Running Performance Test\nnBlock,time (ms),bestA,bestAngle" << std::endl;
+  std::cout << "Running Performance Test\nnBlock,time (ms),bestA,bestAngle"
+            << std::endl;
 
   double maxWidth = m_meshInfo.size.maxCoeff() + settings.rodDiameter;
 
@@ -118,8 +123,7 @@ void VoxelPipeline::RunPerformanceTest(VoxelPipelineSettings settings, int lo, i
     auto start = high_resolution_clock::now();
     UpdateSettings(settings, true);
     auto stop = high_resolution_clock::now();
-    auto duration =
-        duration_cast<milliseconds>(stop - start);
+    auto duration = duration_cast<milliseconds>(stop - start);
     std::cout << i << "," << duration.count() << "," << m_bestNumA << ","
               << m_bestAngle << std::endl;
   }
@@ -192,7 +196,7 @@ void VoxelPipeline::GenerateOffsetMesh(const VoxelPipelineSettings& settings) {
 
   Eigen::Vector3d expandedSize =
       m_meshInfo.size.array() + (settings.rodDiameter + settings.epsilon * 2);
-  expandedSize /= settings.gridSpacing;
+  expandedSize /= settings.marchingCubeSize;
 
   igl::offset_surface(m_mesh_V,
                       m_mesh_F,
@@ -339,7 +343,7 @@ void VoxelPipeline::FindTypeBContactPoints(
         (voxelDimension.transpose().cast<double>() - m_offset_meshInfo.size) /
             2.)
            .array() +
-       (settings.voxelSize / 2))
+       (settings.gridSpacing / 2))
           .cast<float>();
 
   // Shoot a ray from bottom
@@ -354,7 +358,7 @@ void VoxelPipeline::FindTypeBContactPoints(
     for (ssize_t i = 0; i < voxelCount.x(); i++) {
       for (ssize_t k = 0; k < voxelCount.z(); k++) {
         Eigen::RowVector3f position =
-            origin + Eigen::RowVector3f(i, 0, k) * settings.voxelSize;
+            origin + Eigen::RowVector3f(i, 0, k) * settings.gridSpacing;
 
         m_offset_mesh_intersector.intersectRay(
             position, t_direction, t_hits, t_numRays);
@@ -371,6 +375,24 @@ void VoxelPipeline::FindTypeBContactPoints(
 #pragma omp critical
     m_contactPoints.insert(
         m_contactPoints.end(), t_contactPoints.begin(), t_contactPoints.end());
+  }
+
+  m_contactRay_P.resize(voxelCount.x() * voxelCount.z() * 2, 3);
+  m_contactRay_E.resize(voxelCount.x() * voxelCount.z(), 2);
+  for (ssize_t i = 0; i < voxelCount.x(); i++) {
+    for (ssize_t k = 0; k < voxelCount.z(); k++) {
+      Eigen::RowVector3d position =
+          origin.cast<double>() +
+          Eigen::RowVector3d(i, 0, k) * settings.gridSpacing;
+
+      ssize_t u = i * voxelCount.z() * 2 + k * 2;
+      ssize_t v = i * voxelCount.z() + k;
+
+      m_contactRay_P.row(u) = position;
+      m_contactRay_P.row(u + 1) =
+          position + Eigen::RowVector3d(0, m_meshInfo.size.y(), 0);
+      m_contactRay_E.row(v) = Eigen::RowVector2i(u, u + 1);
+    }
   }
 }
 
@@ -425,7 +447,10 @@ void VoxelPipeline::FindBestContactPoints(
   typedef Eigen::Matrix<ssize_t, 3, 1> Index3;
   Index3 bestIndex(-1, -1, -1);
   std::pair<int, double> bestStability = {-1, 100};
-  ssize_t numContacts = m_filteredContactPoints.size();
+  ssize_t n = m_filteredContactPoints.size();
+
+  // loop optimization
+  ssize_t A = n * (n - 1) / 2;
 
 #pragma omp parallel
   {
@@ -434,25 +459,25 @@ void VoxelPipeline::FindBestContactPoints(
     std::pair<int, double> t_stability = {-1, 100};
 
 #pragma omp for
-    for (ssize_t i = 0; i < numContacts; i++) {
-      for (ssize_t j = i + 1; j < numContacts; j++) {
-        for (ssize_t k = j + 1; k < numContacts; k++) {
-          // Check manufacturing constraint
-          if (!CheckManufacturingConstraint(settings,
+    for (ssize_t ii = 0; ii < A; ii++) {
+      ssize_t i = (2 * n - 1 - (ssize_t)ceil(sqrt(1 + 8 * (A - ii)))) / 2;
+      ssize_t j = ii - A + (n - i) * (n - i - 1) / 2 + i + 1;
+      for (ssize_t k = j + 1; k < n; k++) {
+        // Check manufacturing constraint
+        if (!CheckManufacturingConstraint(settings,
+                                          m_filteredContactPoints[i],
+                                          m_filteredContactPoints[j],
+                                          m_filteredContactPoints[k]))
+          continue;
+
+        // Evaluate
+        t_stability = EvaluateContactPoints(m_centerOfMass,
                                             m_filteredContactPoints[i],
                                             m_filteredContactPoints[j],
-                                            m_filteredContactPoints[k]))
-            continue;
-
-          // Evaluate
-          t_stability = EvaluateContactPoints(m_centerOfMass,
-                                              m_filteredContactPoints[i],
-                                              m_filteredContactPoints[j],
-                                              m_filteredContactPoints[k]);
-          if (t_stability > t_bestStability) {
-            t_bestStability = t_stability;
-            t_bestIndex = Index3(i, j, k);
-          }
+                                            m_filteredContactPoints[k]);
+        if (t_stability > t_bestStability) {
+          t_bestStability = t_stability;
+          t_bestIndex = Index3(i, j, k);
         }
       }
     }
@@ -515,10 +540,15 @@ void VoxelPipeline::SetViewerData() {
   m_mainUI->viewerDataMutex.lock();
 
   // Candidate Layer
-  igl::opengl::ViewerData& data_all =
-      m_mainUI->GetViewerData(LayerId::AllContacts);
-  data_all.clear();
-  data_all.set_points(m_contactPoints_P, m_contactPoints_PC);
+  igl::opengl::ViewerData& data_A =
+      m_mainUI->GetViewerData(LayerId::TypeAContacts);
+  data_A.clear();
+  data_A.set_points(m_contactPointsA_P, typeAColor);
+
+  igl::opengl::ViewerData& data_B =
+      m_mainUI->GetViewerData(LayerId::TypeBContacts);
+  data_B.clear();
+  data_B.set_points(m_contactPointsB_P, typeBColor);
 
   // Candidate Layer
   igl::opengl::ViewerData& data_filtered =
@@ -552,9 +582,40 @@ void VoxelPipeline::SetViewerData() {
       m_mainUI->GetViewerData(LayerId::Offset);
   data_offset.clear();
   data_offset.set_mesh(m_offset_mesh_V, m_offset_mesh_F);
+  data_offset.uniform_colors((gold * 0.3).transpose(),
+                             (Eigen::Vector3d)gold.transpose(),
+                             Eigen::Vector3d::Zero());
 
+  // Contact Ray Layer
+  igl::opengl::ViewerData& data_ray =
+      m_mainUI->GetViewerData(LayerId::ContactRay);
+  data_ray.clear();
+  std::cout << m_contactRay_E << std::endl;
+  data_ray.set_edges(m_contactRay_P, m_contactRay_E, contactRayColor);
 
   m_mainUI->viewerDataMutex.unlock();
+}
+
+void VoxelPipeline::GenerateContactPoints() {
+  size_t nTypeA = 0;
+  size_t nTypeB = 0;
+  for (const auto& c : m_contactPoints) {
+    if (c.isTypeA)
+      nTypeA++;
+    else
+      nTypeB++;
+  }
+  m_contactPointsA_P.resize(nTypeA, 3);
+  m_contactPointsB_P.resize(nTypeB, 3);
+  size_t curA = 0;
+  size_t curB = 0;
+  for (const auto& c : m_contactPoints) {
+    if (c.isTypeA) {
+      m_contactPointsA_P.row(curA++) = c.position;
+    } else {
+      m_contactPointsB_P.row(curB++) = c.position;
+    }
+  }
 }
 
 void VoxelPipeline::GeneratePoints(const std::vector<ContactPoint>& points,

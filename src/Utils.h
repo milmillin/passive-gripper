@@ -30,6 +30,8 @@ const Eigen::RowVector3d orange = Eigen::RowVector3d(239, 126, 50) / 255;
 const Eigen::RowVector3d red = Eigen::RowVector3d(192, 35, 35) / 255;
 const Eigen::RowVector3d brown = Eigen::RowVector3d(130, 4, 1) / 255;
 const Eigen::RowVector3d darkBlue = Eigen::RowVector3d(20, 36, 89) / 255;
+const Eigen::RowVector3d blue = Eigen::RowVector3d(0, 0, 255) / 255;
 const Eigen::RowVector3d gold = Eigen::RowVector3d(252, 181, 9) / 255;
+const Eigen::RowVector3d white = Eigen::RowVector3d(255, 255, 255) / 255;
 
 }  // namespace gripper

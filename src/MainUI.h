@@ -21,10 +21,12 @@ enum LayerId {
   Offset,
   GripperDirection,
   CenterOfMass,
-  AllContacts,
+  TypeAContacts,
+  TypeBContacts,
   FilteredContacts,
   BestContacts,
   GripperMesh,
+  ContactRay,
   Max
 };
 

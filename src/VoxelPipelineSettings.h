@@ -11,6 +11,8 @@ struct VoxelPipelineSettings {
   // Contact grid spacing (m)
   double gridSpacing = 0.005;
 
+  double marchingCubeSize = gridSpacing;
+
   // Center of mass voxel size (m)
   double voxelSize = gridSpacing;
 

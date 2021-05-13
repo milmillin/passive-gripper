@@ -23,6 +23,7 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   enum class LayerId : int {
     Mesh = 0,
     ContactPoints,
+    CenterOfMass,
     Max
   };
 
@@ -50,7 +51,9 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
     return viewer->data((int)LayerId::Mesh).F;
   }
  private:
-  void Invalidate();
+  void InvalidateContactPoints();
+  void InvalidateMesh();
+  void CheckFeasibility();
 
   // Mouse
   double m_mouse_x;
@@ -59,9 +62,16 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   // Mesh
   bool meshLoaded;
   MeshInfo meshInfo;
+  Eigen::Vector3d m_centerOfMass;
 
   // Contact Points
   std::vector<ContactPoint> m_contactPoints;
+  std::vector<ContactPoint> m_contactCones;
+  
+
+  // Coeffs
+  double m_friction = 1;
+  size_t m_coneRes = 4;
 
   // Task
   std::deque<std::pair<std::unique_ptr<std::atomic<bool>>,

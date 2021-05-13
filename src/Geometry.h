@@ -26,6 +26,10 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
                        Eigen::Vector3d centerOfMass,
                        Eigen::Vector3d gravity);
 
+// Computes binormal B and tangential T given N.
+// Assumes N is normalized
+void GetPerp(const Eigen::Vector3d& N, Eigen::Vector3d& B, Eigen::Vector3d& T);
+
 // clang-format off
 // Inline mesh of a cube
 const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<

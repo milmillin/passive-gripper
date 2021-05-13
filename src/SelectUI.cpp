@@ -22,10 +22,12 @@ SelectUI::~SelectUI() {
 void SelectUI::init(igl::opengl::glfw::Viewer* _viewer) {
   igl::opengl::glfw::imgui::ImGuiMenu::init(_viewer);
 
+  viewer->data_list[0].point_size = 10;
   // Add other layers
   for (int layerID = 1; layerID < (int)LayerId::Max; layerID++) {
     viewer->data_list.emplace_back();
     viewer->data_list.back().id = layerID;
+    viewer->data_list.back().point_size = 10;
   }
   viewer->next_data_id = (int)LayerId::Max;
 
@@ -82,13 +84,6 @@ void SelectUI::draw_viewer_menu() {
       viewer->open_dialog_save_mesh();
     }
   }
-  if (ImGui::CollapsingHeader("Info", ImGuiTreeNodeFlags_DefaultOpen)) {
-    if (meshLoaded) {
-      ImGui::Text("Click to add a contact point");
-    } else {
-      ImGui::Text("Start by loading a mesh");
-    }
-  }
   if (meshLoaded) {
     if (ImGui::CollapsingHeader("Contact Points",
                                 ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -107,7 +102,22 @@ void SelectUI::draw_viewer_menu() {
       }
       if (toDelete != -1) {
         m_contactPoints.erase(m_contactPoints.begin() + toDelete);
-        Invalidate();
+        InvalidateContactPoints();
+      }
+    }
+    if (ImGui::CollapsingHeader("Options", ImGuiTreeNodeFlags_DefaultOpen)) {
+      bool update = false;
+      update |= ImGui::InputDouble("Friction Coeff", &m_friction);
+      update |= ImGui::InputInt("Cone Resolution", (int*)&m_coneRes);
+      if (update) InvalidateContactPoints();
+    }
+    if (ImGui::CollapsingHeader("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
+      if (ImGui::Button("Check Feasibility", ImVec2(w - p, 0))) {
+        CheckFeasibility();
+      }
+      if (ImGui::Button("Clear All Contact Points", ImVec2(w - p, 0))) {
+        m_contactPoints.clear();
+        InvalidateContactPoints();
       }
     }
   }
@@ -133,6 +143,10 @@ void SelectUI::draw_viewer_menu() {
     ImGui::Checkbox(
         "Contact Points",
         (bool*)&(viewer->data((int)LayerId::ContactPoints).is_visible));
+
+    ImGui::Checkbox(
+        "Center of Mass",
+        (bool*)&(viewer->data((int)LayerId::CenterOfMass).is_visible));
     ImGui::PopID();
   }
 }
@@ -185,41 +199,85 @@ bool SelectUI::mouse_up(int button, int modifier) {
                                  F,
                                  fid,
                                  bc)) {
-      std::cout << fid << ":" << bc << std::endl;
       Eigen::Vector3d a = V.row(F(fid, 0));
       Eigen::Vector3d b = V.row(F(fid, 1));
       Eigen::Vector3d c = V.row(F(fid, 2));
       m_contactPoints.push_back(
-          ContactPoint{bc(0) * a + bc(1) * b + bc(2) * c, N.row(fid), false});
-      Invalidate();
+          ContactPoint{bc(0) * a + bc(1) * b + bc(2) * c, -N.row(fid), false});
+      InvalidateContactPoints();
       return true;
     }
   }
   return false;
 }
 
-void SelectUI::Invalidate() {
+void SelectUI::InvalidateContactPoints() {
+  // Generate cones
+  size_t nContacts = m_contactPoints.size();
+  m_contactCones.resize(nContacts * m_coneRes);
+  Eigen::Vector3d B;
+  Eigen::Vector3d T;
+  double stepSize = EIGEN_PI * 2 / m_coneRes;
+  double curStep;
+  for (size_t i = 0; i < nContacts; i++) {
+    const auto& cp = m_contactPoints[i];
+    GetPerp(cp.normal, B, T);
+    B *= m_friction;
+    T *= m_friction;
+    for (size_t j = 0; j < m_coneRes; j++) {
+      curStep = j * stepSize;
+      m_contactCones[i * m_coneRes + j] =
+          ContactPoint{cp.position,
+                       cp.normal + B * cos(curStep) + T * sin(curStep),
+                       cp.isTypeA};
+    }
+  }
+
   auto& cpLayer = viewer->data((int)LayerId::ContactPoints);
   cpLayer.clear();
 
-  Eigen::MatrixXd P(m_contactPoints.size(), 3);
-  Eigen::MatrixXd V(m_contactPoints.size() * 2, 3);
-  Eigen::MatrixXi VE(m_contactPoints.size(), 2);
+  Eigen::MatrixXd P(nContacts, 3);
+  Eigen::MatrixXd V(nContacts * m_coneRes * 2, 3);
+  Eigen::MatrixXi VE(nContacts * m_coneRes * 3, 2);
+  size_t tmp;
+  size_t tmp2;
   for (size_t i = 0; i < m_contactPoints.size(); i++) {
-    const auto& cp = m_contactPoints[i];
-    P.row(i) = cp.position;
-    V.row(i * 2) = cp.position;
-    V.row(i * 2 + 1) = cp.position + 0.1 * cp.normal;
-    VE.row(i) = Eigen::RowVector2i(i * 2, i * 2 + 1);
+    P.row(i) = m_contactPoints[i].position;
+    for (size_t j = 0; j < m_coneRes; j++) {
+      const auto& cp = m_contactCones[i * m_coneRes + j];
+      tmp = i * m_coneRes * 2 + j * 2;
+      tmp2 = i * m_coneRes * 2 + ((j + 1) % m_coneRes) * 2;
+      V.row(tmp) = cp.position - 0.02 * cp.normal;
+      V.row(tmp + 1) = cp.position + 0.02 * cp.normal;
+      VE.row(i * m_coneRes * 3 + j * 3) = Eigen::RowVector2i(tmp, tmp + 1);
+      VE.row(i * m_coneRes * 3 + j * 3 + 1) = Eigen::RowVector2i(tmp, tmp2);
+      VE.row(i * m_coneRes * 3 + j * 3 + 2) = Eigen::RowVector2i(tmp + 1, tmp2 + 1);
+    }
   }
-  cpLayer.set_points(P, Eigen::RowVector3d(0.5, 0.2, 0));
-  cpLayer.set_edges(V, VE, Eigen::RowVector3d(0, 0.5, 0.2));
+  cpLayer.set_points(P, Eigen::RowVector3d(0.7, 0, 0.2));
+  cpLayer.set_edges(V, VE, Eigen::RowVector3d(0, 0.5, 0.7));
   cpLayer.line_width = 2;
+}
+
+void SelectUI::InvalidateMesh() {
+  auto& cmLayer = viewer->data((int)LayerId::CenterOfMass);
+  cmLayer.clear();
+  cmLayer.set_points(m_centerOfMass.transpose(),
+                     Eigen::RowVector3d(0.7, 0.2, 0));
+}
+
+void SelectUI::CheckFeasibility() {
+  CheckForceClosure(m_contactCones, m_centerOfMass, Eigen::Vector3d(0, -1, 0));
 }
 
 bool SelectUI::post_load() {
   meshLoaded = true;
   meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
+
+  // FIXME: Average COM for now
+  m_centerOfMass = (meshInfo.minimum + meshInfo.maximum) / 2;
+  InvalidateMesh();
+
   viewer->data((int)LayerId::Mesh)
       .uniform_colors((gold * 0.3).transpose(),
                       (Eigen::Vector3d)gold.transpose(),

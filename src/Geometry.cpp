@@ -161,7 +161,11 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
     T.row(6) += T.row(i);
   }
 
-  std::cout << "Initial:\n" << T << std::endl;
+  // std::cout << "Initial:\n" << T << std::endl;
+  size_t owner[6];
+  for (size_t i = 0; i < 6; i++) {
+    owner[i] = nContacts + i;  
+  }  
 
   // Simplex Iteration
   size_t pivotCol = -1;
@@ -183,9 +187,12 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
       }
     }
     if (pivotRow == -1) {
-      std::cout << "Unbounded" << std::endl;    
-      return true;
+      std::cout << "Unbounded\n";
+      // << T.block<7, 7>(0, nContacts) << std::endl;
+      break;
     }
+
+    owner[pivotRow] = pivotCol;
 
     T.row(pivotRow) /= T(pivotRow, pivotCol);
     for (size_t i = 0; i < 7; i++) {
@@ -194,10 +201,23 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
     }
   }
 
+  Eigen::MatrixXd result(1, nContacts + 6);
+  result.setZero();
+  for (size_t i = 0; i < 6; i++) {
+    result(owner[i]) = T(i, nCols - 1);
+  }
   double obj = T(6, nCols - 1);
-  std::cout << "Objective: " << obj << std::endl;
-  std::cout << "Tableu:\n" << T << std::endl;
+  std::cout << "Coeffs:\n" << result.block(0, 0, 1, nContacts) << std::endl;
+  std::cout << "Errors:\n" << result.block<1, 6>(0, nContacts) << std::endl;
+  std::cout << "Sum error: " << obj << std::endl;
   return abs(obj) < 1e-12;
+}
+
+void GetPerp(const Eigen::Vector3d& N, Eigen::Vector3d& B, Eigen::Vector3d& T) {
+  B = N.cross(Eigen::Vector3d::UnitX());
+  if (B.squaredNorm() < 1e12) B = N.cross(Eigen::Vector3d::UnitY());
+  B.normalize();
+  T = B.cross(N);
 }
 
 }  // namespace gripper

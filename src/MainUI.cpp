@@ -20,33 +20,33 @@ void MainUI::init(igl::opengl::glfw::Viewer* _viewer) {
   igl::opengl::glfw::imgui::ImGuiMenu::init(_viewer);
 
   // Add other layers
-  for (int layerID = 1; layerID < LayerId::Max; layerID++) {
+  for (int layerID = 1; layerID < (int)LayerId::Max; layerID++) {
     viewer->data_list.emplace_back();
-    viewer->data_list.back().id = (LayerId)layerID;
+    viewer->data_list.back().id = layerID;
   }
-  viewer->next_data_id = LayerId::Max;
+  viewer->next_data_id = (int)LayerId::Max;
 
   // Set default point size
-  viewer->data_list[LayerId::CenterOfMass].point_size = 8;
-  viewer->data_list[LayerId::TypeAContacts].point_size = 8;
-  viewer->data_list[LayerId::TypeBContacts].point_size = 8;
-  viewer->data_list[LayerId::FilteredContacts].point_size = 8;
-  viewer->data_list[LayerId::BestContacts].point_size = 8;
+  viewer->data_list[(int)LayerId::CenterOfMass].point_size = 8;
+  viewer->data_list[(int)LayerId::TypeAContacts].point_size = 8;
+  viewer->data_list[(int)LayerId::TypeBContacts].point_size = 8;
+  viewer->data_list[(int)LayerId::FilteredContacts].point_size = 8;
+  viewer->data_list[(int)LayerId::BestContacts].point_size = 8;
 
   // Set default
-  viewer->data_list[LayerId::Mesh].is_visible = true;
-  viewer->data_list[LayerId::Offset].is_visible = false;
-  viewer->data_list[LayerId::GripperDirection].is_visible = false;
-  viewer->data_list[LayerId::CenterOfMass].is_visible = false;
-  viewer->data_list[LayerId::TypeAContacts].is_visible = false;
-  viewer->data_list[LayerId::TypeBContacts].is_visible = false;
-  viewer->data_list[LayerId::FilteredContacts].is_visible = false;
-  viewer->data_list[LayerId::BestContacts].is_visible = false;
-  viewer->data_list[LayerId::GripperMesh].is_visible = true;
-  viewer->data_list[LayerId::ContactRay].is_visible = false;
+  viewer->data_list[(int)LayerId::Mesh].is_visible = true;
+  viewer->data_list[(int)LayerId::Offset].is_visible = false;
+  viewer->data_list[(int)LayerId::GripperDirection].is_visible = false;
+  viewer->data_list[(int)LayerId::CenterOfMass].is_visible = false;
+  viewer->data_list[(int)LayerId::TypeAContacts].is_visible = false;
+  viewer->data_list[(int)LayerId::TypeBContacts].is_visible = false;
+  viewer->data_list[(int)LayerId::FilteredContacts].is_visible = false;
+  viewer->data_list[(int)LayerId::BestContacts].is_visible = false;
+  viewer->data_list[(int)LayerId::GripperMesh].is_visible = true;
+  viewer->data_list[(int)LayerId::ContactRay].is_visible = false;
 
-  viewer->data_list[LayerId::GripperMesh].shininess = 10;
-  viewer->data_list[LayerId::Mesh].shininess = 10;
+  viewer->data_list[(int)LayerId::GripperMesh].shininess = 10;
+  viewer->data_list[(int)LayerId::Mesh].shininess = 10;
 
   viewer->core().orthographic = true;
 }
@@ -89,7 +89,7 @@ void MainUI::draw_viewer_menu() {
   float p = ImGui::GetStyle().FramePadding.x;
   if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Load##Mesh", ImVec2((w - p) / 2.f, 0))) {
-      viewer->selected_data_index = LayerId::Mesh;
+      viewer->selected_data_index = (int)LayerId::Mesh;
       viewer->data().V.resize(0, 0);
       viewer->data().F.resize(0, 0);
       viewer->open_dialog_load_mesh();
@@ -174,8 +174,8 @@ void MainUI::draw_viewer_menu() {
         if (ImGui::Button("Save Offset Mesh", ImVec2(w - p, 0))) {
           std::string filename = igl::file_dialog_save();
           igl::writeOBJ(filename,
-                        viewer->data(LayerId::Offset).V,
-                        viewer->data(LayerId::Offset).F);
+                        viewer->data((int)LayerId::Offset).V,
+                        viewer->data((int)LayerId::Offset).F);
         }
       }
     }
@@ -205,47 +205,47 @@ void MainUI::draw_viewer_menu() {
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("View");
     if (ImGui::InputFloat("Point Size",
-                          &(viewer->data(LayerId::CenterOfMass).point_size),
+                          &(viewer->data((int)LayerId::CenterOfMass).point_size),
                           1,
                           2,
                           "%.1f")) {
-      float pointSize = viewer->data(LayerId::CenterOfMass).point_size;
-      viewer->data(LayerId::TypeAContacts).point_size = pointSize;
-      viewer->data(LayerId::TypeBContacts).point_size = pointSize;
-      viewer->data(LayerId::FilteredContacts).point_size = pointSize;
-      viewer->data(LayerId::BestContacts).point_size = pointSize;
+      float pointSize = viewer->data((int)LayerId::CenterOfMass).point_size;
+      viewer->data((int)LayerId::TypeAContacts).point_size = pointSize;
+      viewer->data((int)LayerId::TypeBContacts).point_size = pointSize;
+      viewer->data((int)LayerId::FilteredContacts).point_size = pointSize;
+      viewer->data((int)LayerId::BestContacts).point_size = pointSize;
     }
 
     if (ImGui::Checkbox("Show lines",
-                        (bool*)&(viewer->data(LayerId::Mesh).show_lines))) {
-      viewer->data(LayerId::GripperMesh).show_lines =
-          viewer->data(LayerId::Offset).show_lines =
-              viewer->data(LayerId::Mesh).show_lines;
+                        (bool*)&(viewer->data((int)LayerId::Mesh).show_lines))) {
+      viewer->data((int)LayerId::GripperMesh).show_lines =
+          viewer->data((int)LayerId::Offset).show_lines =
+              viewer->data((int)LayerId::Mesh).show_lines;
     }
 
-    ImGui::Checkbox("Mesh", (bool*)&(viewer->data(LayerId::Mesh).is_visible));
+    ImGui::Checkbox("Mesh", (bool*)&(viewer->data((int)LayerId::Mesh).is_visible));
     ImGui::Checkbox("Offset Mesh",
-                    (bool*)&(viewer->data(LayerId::Offset).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::Offset).is_visible));
     ImGui::Checkbox(
         "Gripper Direction",
-        (bool*)&(viewer->data(LayerId::GripperDirection).is_visible));
+        (bool*)&(viewer->data((int)LayerId::GripperDirection).is_visible));
     ImGui::Checkbox("Center of Mass",
-                    (bool*)&(viewer->data(LayerId::CenterOfMass).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::CenterOfMass).is_visible));
     ImGui::Checkbox("All Type A Contacts",
-                    (bool*)&(viewer->data(LayerId::TypeAContacts).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::TypeAContacts).is_visible));
     ImGui::Checkbox("All Type B Contacts",
-                    (bool*)&(viewer->data(LayerId::TypeBContacts).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::TypeBContacts).is_visible));
     ImGui::Checkbox(
         "Filtered Contacts",
-        (bool*)&(viewer->data(LayerId::FilteredContacts).is_visible));
+        (bool*)&(viewer->data((int)LayerId::FilteredContacts).is_visible));
     ImGui::Checkbox("Best Contacts",
-                    (bool*)&(viewer->data(LayerId::BestContacts).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::BestContacts).is_visible));
     ImGui::Checkbox("Gripper",
-                    (bool*)&(viewer->data(LayerId::GripperMesh).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::GripperMesh).is_visible));
     ImGui::Checkbox("Contact Ray",
-                    (bool*)&(viewer->data(LayerId::ContactRay).is_visible));
+                    (bool*)&(viewer->data((int)LayerId::ContactRay).is_visible));
     ImGui::InputFloat("Contact Ray Size",
-                      &(viewer->data(LayerId::ContactRay).line_width),
+                      &(viewer->data((int)LayerId::ContactRay).line_width),
                       0.5,
                       2,
                       "%.1f");
@@ -323,7 +323,7 @@ void MainUI::Render() {
 
 void MainUI::DrawGrabDirection() {
   static Eigen::RowVector3d directionColor = Eigen::RowVector3d(1, 0.5, 0);
-  auto& layer = viewer->data(LayerId::GripperDirection);
+  auto& layer = viewer->data((int)LayerId::GripperDirection);
   layer.clear_edges();
   layer.add_edges(Eigen::RowVector3d::Zero(),
                   GetDirectionFromAngle(voxelSettings.grabAngle)
@@ -354,7 +354,7 @@ bool MainUI::post_load() {
   meshInfo = MeshInfo(GetMeshVertices(), GetMeshFaces());
   voxelPipeline.reset();
   DrawGrabDirection();
-  viewer->data(LayerId::Mesh)
+  viewer->data((int)LayerId::Mesh)
       .uniform_colors((gold * 0.3).transpose(),
                       (Eigen::Vector3d)gold.transpose(),
                       Eigen::Vector3d::Zero());

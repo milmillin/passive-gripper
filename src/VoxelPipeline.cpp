@@ -541,37 +541,37 @@ void VoxelPipeline::SetViewerData() {
 
   // Candidate Layer
   igl::opengl::ViewerData& data_A =
-      m_mainUI->GetViewerData(LayerId::TypeAContacts);
+      m_mainUI->GetViewerData(MainUI::LayerId::TypeAContacts);
   data_A.clear();
   data_A.set_points(m_contactPointsA_P, typeAColor);
 
   igl::opengl::ViewerData& data_B =
-      m_mainUI->GetViewerData(LayerId::TypeBContacts);
+      m_mainUI->GetViewerData(MainUI::LayerId::TypeBContacts);
   data_B.clear();
   data_B.set_points(m_contactPointsB_P, typeBColor);
 
   // Candidate Layer
   igl::opengl::ViewerData& data_filtered =
-      m_mainUI->GetViewerData(LayerId::FilteredContacts);
+      m_mainUI->GetViewerData(MainUI::LayerId::FilteredContacts);
   data_filtered.clear();
   data_filtered.set_points(m_filteredContactPoints_P,
                            m_filteredContactPoints_PC);
 
   // Best Layer
   igl::opengl::ViewerData& data_best =
-      m_mainUI->GetViewerData(LayerId::BestContacts);
+      m_mainUI->GetViewerData(MainUI::LayerId::BestContacts);
   data_best.clear();
   data_best.set_points(m_bestContactPoints_P, m_bestContactPoints_PC);
 
   // Center of Mass Layer
   igl::opengl::ViewerData& data_cm =
-      m_mainUI->GetViewerData(LayerId::CenterOfMass);
+      m_mainUI->GetViewerData(MainUI::LayerId::CenterOfMass);
   data_cm.clear();
   data_cm.set_points(m_centerOfMass.transpose(), centerOfMassColor);
 
   // Gripper Layer
   igl::opengl::ViewerData& data_gripper =
-      m_mainUI->GetViewerData(LayerId::GripperMesh);
+      m_mainUI->GetViewerData(MainUI::LayerId::GripperMesh);
   data_gripper.clear();
   data_gripper.set_face_based(true);
   data_gripper.set_mesh(m_gripper.V(), m_gripper.F());
@@ -579,7 +579,7 @@ void VoxelPipeline::SetViewerData() {
 
   // Offset Mesh Layer
   igl::opengl::ViewerData& data_offset =
-      m_mainUI->GetViewerData(LayerId::Offset);
+      m_mainUI->GetViewerData(MainUI::LayerId::Offset);
   data_offset.clear();
   data_offset.set_mesh(m_offset_mesh_V, m_offset_mesh_F);
   data_offset.uniform_colors((gold * 0.3).transpose(),
@@ -588,7 +588,7 @@ void VoxelPipeline::SetViewerData() {
 
   // Contact Ray Layer
   igl::opengl::ViewerData& data_ray =
-      m_mainUI->GetViewerData(LayerId::ContactRay);
+      m_mainUI->GetViewerData(MainUI::LayerId::ContactRay);
   data_ray.clear();
   std::cout << m_contactRay_E << std::endl;
   data_ray.set_edges(m_contactRay_P, m_contactRay_E, contactRayColor);

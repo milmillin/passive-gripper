@@ -16,24 +16,25 @@
 
 namespace gripper {
 
-enum LayerId {
-  Mesh = 0,
-  Offset,
-  GripperDirection,
-  CenterOfMass,
-  TypeAContacts,
-  TypeBContacts,
-  FilteredContacts,
-  BestContacts,
-  GripperMesh,
-  ContactRay,
-  Max
-};
 
 class VoxelPipeline;
 
 class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
  public:
+  enum class LayerId : int {
+    Mesh = 0,
+    Offset,
+    GripperDirection,
+    CenterOfMass,
+    TypeAContacts,
+    TypeBContacts,
+    FilteredContacts,
+    BestContacts,
+    GripperMesh,
+    ContactRay,
+    Max
+  };
+
   MainUI();
   ~MainUI();
 
@@ -46,13 +47,13 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
 
   std::mutex viewerDataMutex;
   inline igl::opengl::ViewerData& GetViewerData(LayerId layerId) {
-    return viewer->data(layerId);
+    return viewer->data((int)layerId);
   }
   inline Eigen::MatrixXd& GetMeshVertices() {
-    return viewer->data(LayerId::Mesh).V;
+    return viewer->data((int)LayerId::Mesh).V;
   }
   inline Eigen::MatrixXi& GetMeshFaces() {
-    return viewer->data(LayerId::Mesh).F;
+    return viewer->data((int)LayerId::Mesh).F;
   }
 
   // VoxelPipeline

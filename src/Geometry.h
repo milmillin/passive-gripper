@@ -22,6 +22,10 @@ std::pair<int, double> EvaluateContactPoints(
     const ContactPoint& c2,
     const ContactPoint& c3);
 
+bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
+                       Eigen::Vector3d centerOfMass,
+                       Eigen::Vector3d gravity);
+
 // clang-format off
 // Inline mesh of a cube
 const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<

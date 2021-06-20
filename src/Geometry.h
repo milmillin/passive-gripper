@@ -24,7 +24,12 @@ std::pair<int, double> EvaluateContactPoints(
 
 bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
                        Eigen::Vector3d centerOfMass,
-                       Eigen::Vector3d gravity);
+                       Eigen::Vector3d extForce,
+                       Eigen::Vector3d extTorque,
+                       Eigen::MatrixXd& out_result);
+
+// Returns a list of unit vectors discretized
+std::vector<Eigen::Vector3d> ComputeDirections(int steps);
 
 // Computes binormal B and tangential T given N.
 // Assumes N is normalized

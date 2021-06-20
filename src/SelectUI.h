@@ -24,6 +24,8 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
     Mesh = 0,
     ContactPoints,
     CenterOfMass,
+    Feasible,
+    MinForces,
     Max
   };
 
@@ -51,9 +53,14 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
     return viewer->data((int)LayerId::Mesh).F;
   }
  private:
+  // Manipulate layer data
   void InvalidateContactPoints();
   void InvalidateMesh();
+  void InvalidateFeasible();
+  void InvalidateMinForces();
+
   void CheckFeasibility();
+  void CheckMinForce();
 
   // Mouse
   double m_mouse_x;
@@ -68,9 +75,18 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   std::vector<ContactPoint> m_contactPoints;
   std::vector<ContactPoint> m_contactCones;
   
+  // Feasibility Check
+  bool m_isFeasibleValid = false;
+  bool m_isFeasible = false;
+  Eigen::MatrixXd m_coeffs;
+
+  // Minimum Force Check
+  int m_angleRes = 4;
+  std::vector<Eigen::Vector3d> m_directions;
+  std::vector<double> m_minForces;
 
   // Coeffs
-  double m_friction = 1;
+  double m_friction = 0.5;
   size_t m_coneRes = 4;
 
   // Task

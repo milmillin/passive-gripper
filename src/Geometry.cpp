@@ -129,7 +129,9 @@ bool IsOptimal(Eigen::Block<Eigen::MatrixXd, 1> lastRow, size_t& pivotCol) {
 
 bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
                        Eigen::Vector3d centerOfMass,
-                       Eigen::Vector3d gravity) {
+                       Eigen::Vector3d extForce,
+                       Eigen::Vector3d extTorque,
+                       Eigen::MatrixXd& out_result) {
   // Simplex Method Phase I
 
   size_t nContacts = contactPoints.size();
@@ -145,7 +147,8 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
     T.block<3, 1>(3, i) = (cp.position - centerOfMass).cross(cp.normal);
   }
   // -External Force
-  T.block<3, 1>(0, nCols - 1) = -gravity.transpose();
+  T.block<3, 1>(0, nCols - 1) = -extForce.transpose();
+  T.block<3, 1>(3, nCols - 1) = -extTorque.transpose();
 
   // Flip so that rhs is positive
   for (size_t i = 0; i < 6; i++) {
@@ -164,8 +167,8 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
   // std::cout << "Initial:\n" << T << std::endl;
   size_t owner[6];
   for (size_t i = 0; i < 6; i++) {
-    owner[i] = nContacts + i;  
-  }  
+    owner[i] = nContacts + i;
+  }
 
   // Simplex Iteration
   size_t pivotCol = -1;
@@ -197,20 +200,40 @@ bool CheckForceClosure(const std::vector<ContactPoint>& contactPoints,
     T.row(pivotRow) /= T(pivotRow, pivotCol);
     for (size_t i = 0; i < 7; i++) {
       if (i == pivotRow) continue;
-      T.row(i) -= T.row(pivotRow) * T(i, pivotCol);    
+      T.row(i) -= T.row(pivotRow) * T(i, pivotCol);
     }
   }
 
-  Eigen::MatrixXd result(1, nContacts + 6);
-  result.setZero();
+  // Eigen::MatrixXd result(1, nContacts + 6);
+  out_result.resize(1, nContacts + 6);
+  out_result.setZero();
+  bool isFeasible = true;
   for (size_t i = 0; i < 6; i++) {
-    result(owner[i]) = T(i, nCols - 1);
+    out_result(owner[i]) = T(i, nCols - 1);
+    if (owner[i] >= nContacts) isFeasible = false;
   }
-  double obj = T(6, nCols - 1);
-  std::cout << "Coeffs:\n" << result.block(0, 0, 1, nContacts) << std::endl;
-  std::cout << "Errors:\n" << result.block<1, 6>(0, nContacts) << std::endl;
-  std::cout << "Sum error: " << obj << std::endl;
-  return abs(obj) < 1e-12;
+  return isFeasible;
+  // double obj = T(6, nCols - 1);
+  // std::cout << "Coeffs:\n" << result.block(0, 0, 1, nContacts) << std::endl;
+  // std::cout << "Errors:\n" << result.block<1, 6>(0, nContacts) << std::endl;
+  // std::cout << "Sum error: " << obj << std::endl;
+  // return abs(obj) < 1e-12;
+}
+
+std::vector<Eigen::Vector3d> ComputeDirections(int steps) {
+  std::vector<Eigen::Vector3d> res;
+  double rhoStep = EIGEN_PI / steps / 2.;
+  for (int i = -steps; i <= steps; i++) {
+    double rho = i * rhoStep;
+    int numSub = (int)floor(cos(rho) * steps * 4) + 1;
+    double thetaStep = 2. * EIGEN_PI / numSub;
+    for (int j = 0; j < numSub; j++) {
+      double theta = j * thetaStep;
+      res.push_back(Eigen::Vector3d(
+          cos(theta) * cos(rho), sin(rho), sin(theta) * cos(rho)));
+    }
+  }
+  return res;
 }
 
 void GetPerp(const Eigen::Vector3d& N, Eigen::Vector3d& B, Eigen::Vector3d& T) {

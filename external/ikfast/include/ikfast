@@ -1,0 +1,3 @@
+
+#define IKFAST_HAS_LIBRARY
+#include "src/ikfast.h"

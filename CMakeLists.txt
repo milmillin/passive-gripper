@@ -15,23 +15,32 @@ file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 if (MSVC)
   # For Microsoft compiler
-  # Enable OpenMP
-  # Enable Warning
   set_source_files_properties(
     ${SRCFILES}
     PROPERTIES
     COMPILE_FLAGS "/W4"
   )
+
+  # Find LAPACK
+  set(LAPACK_DIR "external/lapack")
+  find_package(LAPACK CONFIG REQUIRED)
+
+  # Copy shared libraries to binary directory
+  file(GLOB LAPACK_DLLS ${LAPACK_DIR}/*.dll)
+  foreach (lapack_lib ${LAPACK_DLLS})
+    message(STATUS "Copying ${lapack_lib} to build directory")
+    file(COPY ${lapack_lib} DESTINATION ${PROJECT_BINARY_DIR})
+  endforeach()
 else()
   # For other compilers
-  # Enable OpenMP
-  # Enable Warning
   set_source_files_properties(
     ${SRCFILES}
     PROPERTIES
     COMPILE_FLAGS "-Wall -Wextra -pedantic"
   )
   set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+  find_package(LAPACK)
 endif()
 
 # Link OpenMP
@@ -50,7 +59,7 @@ option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use IMGUI"          ON)
 option(LIBIGL_WITH_EMBREE            "Use Embree"         ON)
 
 # Link libraries
-set(LINK_LIBS igl::core igl::opengl_glfw igl::opengl_glfw_imgui igl::embree igl::png embree)
+set(LINK_LIBS igl::core igl::opengl_glfw igl::opengl_glfw_imgui igl::embree igl::png embree lapack)
 if (NOT MSVC)
     list(APPEND LINK_LIBS stdc++fs)
 endif()
@@ -62,6 +71,12 @@ include_directories(external/dxflib/include)
 set(SRCFILES ${SRCFILES} 
     external/dxflib/include/dxflib/src/dl_dxf.cpp
     external/dxflib/include/dxflib/src/dl_writer_ascii.cpp
+)
+
+# ikfast
+include_directories(external/ikfast/include)
+set(SRCFILES ${SRCFILES}
+    external/ikfast/include/src/ikfast61.cpp
 )
 
 # cxxopts

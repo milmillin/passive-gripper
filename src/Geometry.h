@@ -37,7 +37,7 @@ void GetPerp(const Eigen::Vector3d& N, Eigen::Vector3d& B, Eigen::Vector3d& T);
 
 // clang-format off
 // Inline mesh of a cube
-const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
+const Eigen::Matrix<double, 8, 3> cube_V = (Eigen::MatrixXd(8, 3) <<
   0.0, 0.0, 0.0,
   0.0, 0.0, 1.0,
   0.0, 1.0, 0.0,
@@ -46,7 +46,7 @@ const Eigen::MatrixXd cube_V = (Eigen::MatrixXd(8, 3) <<
   1.0, 0.0, 1.0,
   1.0, 1.0, 0.0,
   1.0, 1.0, 1.0).finished();
-const Eigen::MatrixXi cube_F = (Eigen::MatrixXi(12, 3) <<
+const Eigen::Matrix<int, 12, 3> cube_F = (Eigen::MatrixXi(12, 3) <<
   1, 7, 5,
   1, 3, 7,
   1, 4, 3,
@@ -59,6 +59,17 @@ const Eigen::MatrixXi cube_F = (Eigen::MatrixXi(12, 3) <<
   1, 6, 2,
   2, 6, 8,
   2, 8, 4).finished().array() - 1;
+
+const Eigen::Matrix<double, 4, 3> axis_V = (Eigen::Matrix<double, 4, 3>() <<
+  0, 0, 0,
+  1, 0, 0,
+  0, 1, 0,
+  0, 0, 1).finished();
+
+const Eigen::Matrix<int, 3, 2> axis_E = (Eigen::Matrix<int, 3, 2>() <<
+  0, 1,
+  0, 2,
+  0, 3).finished();
 // clang-format on
 
 Eigen::MatrixXd GenerateCubeV(Eigen::Vector3d origin, Eigen::Vector3d size);

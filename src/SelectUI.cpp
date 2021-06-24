@@ -3,14 +3,18 @@
 #include <igl/png/writePNG.h>
 #include <igl/unproject_onto_mesh.h>
 #include <imgui.h>
+#include <Eigen/Geometry>
 #include <iostream>
 #include "Geometry.h"
+#include "IKUtils.h"
 #include "Utils.h"
 
 namespace gripper {
 
 SelectUI::SelectUI()
-    : igl::opengl::glfw::imgui::ImGuiMenu(), meshLoaded(false) {}
+    : igl::opengl::glfw::imgui::ImGuiMenu(),
+      meshLoaded(false),
+      m_jointConfigs(6, 0) {}
 
 SelectUI::~SelectUI() {
   while (!tasks.empty()) {
@@ -32,6 +36,14 @@ void SelectUI::init(igl::opengl::glfw::Viewer* _viewer) {
   viewer->next_data_id = (int)LayerId::Max;
 
   viewer->core().orthographic = true;
+
+  // draw axis
+  auto& axisLayer = viewer->data((int)LayerId::Axis);
+  axisLayer.set_edges(axis_V * 0.1, axis_E, Eigen::Matrix3d::Identity());
+  axisLayer.line_width = 2;
+
+  // draw FK
+  InvalidateFK();
 }
 
 void SelectUI::draw_viewer_window() {
@@ -75,8 +87,7 @@ void SelectUI::draw_viewer_menu() {
     if (ImGui::Button("Load##Mesh", ImVec2((w - p) / 2.f, 0))) {
       meshLoaded = false;
       viewer->selected_data_index = (int)LayerId::Mesh;
-      viewer->data().V.resize(0, 0);
-      viewer->data().F.resize(0, 0);
+      viewer->data().clear();
       viewer->open_dialog_load_mesh();
     }
     ImGui::SameLine(0, p);
@@ -140,6 +151,44 @@ void SelectUI::draw_viewer_menu() {
       }
     }
   }
+  static const char* label_FK[] = {"1", "2", "3", "4", "5", "6"};
+  static const char* label_IK[] = {"X", "Y", "Z", "Alpha", "Beta", "Gamma"};
+  if (ImGui::CollapsingHeader("Forward Kinematics",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::PushID("FK");
+    bool updateFK = false;
+    for (int i = 0; i < 6; i++) {
+      updateFK |= ImGui::InputDouble(label_FK[i], &m_jointConfigs[i], 0.1);
+    }
+    if (updateFK) {
+      InvalidateFK();
+    }
+    ImGui::PopID();
+  }
+  if (ImGui::CollapsingHeader("Inverse Kinematics",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::PushID("IK");
+    bool updateIK = false;
+    for (int i = 0; i < 3; i++) {
+      updateIK |= ImGui::InputDouble(label_IK[i], &m_position.data()[i], 0.01);
+    }
+    for (int i = 0; i < 3; i++) {
+      updateIK |=
+          ImGui::InputDouble(label_IK[i + 3], &m_eulerAngles.data()[i], 0.05);
+    }
+    if (m_ikSolutionValid) {
+      ImGui::Text(
+          "Solution: %llu/%llu", m_ikSelectedIndex + 1, m_ikSolutions.size());
+      if (ImGui::Button("Toggle Solution", ImVec2(w - p, 0))) {
+        ToggleIKSolution();
+      }
+    }
+    if (updateIK) {
+      InvalidateIK();
+    }
+    ImGui::PopID();
+  }
+
   if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("View");
     float pointSize = viewer->data(0).point_size;
@@ -168,6 +217,8 @@ void SelectUI::draw_viewer_menu() {
                     (bool*)&(viewer->data((int)LayerId::Feasible).is_visible));
     ImGui::Checkbox("Min Forces",
                     (bool*)&(viewer->data((int)LayerId::MinForces).is_visible));
+    ImGui::Checkbox("Robot",
+                    (bool*)&(viewer->data((int)LayerId::Robot).is_visible));
     ImGui::PopID();
   }
 }
@@ -339,18 +390,82 @@ void SelectUI::InvalidateMinForces() {
       VE(i * n + j, 1) = i * (n + 1) + n;
     }
   }
-  /*
-  V.row(m_angleRes) = origin;
-  double step = 2. * EIGEN_PI / m_angleRes;
-  for (int i = 0; i < m_angleRes; i++) {
-    V.row(i) = origin + (0.5 * m_minForces[i]) * Eigen::Vector3d(cos(step * i), 0, sin(step * i));
-    VE(i, 0) = i;
-    VE(i, 1) = m_angleRes;
-  }
-  */
-
   mfLayer.set_edges(V, VE, Eigen::RowVector3d(0.6, 0.3, 0.1));
   mfLayer.line_width = 2;
+}
+static const double arm_radius = 0.0465;
+
+static const Eigen::Affine3d localTrans[6] = {
+    Eigen::Translation3d(-arm_radius, -0.0892, -arm_radius) *
+        Eigen::Scaling(2 * arm_radius, arm_radius + 0.0892, 2 * arm_radius),
+    Eigen::Translation3d(-arm_radius, -arm_radius, arm_radius) *
+        Eigen::Scaling(2 * arm_radius + 0.425, 2 * arm_radius, 2 * arm_radius),
+    Eigen::Translation3d(-arm_radius, -arm_radius, 0.02 - arm_radius) *
+        Eigen::Scaling(2 * arm_radius + 0.39225,
+                       2 * arm_radius,
+                       2 * arm_radius),
+    Eigen::Translation3d(-arm_radius, -arm_radius, -arm_radius) *
+        Eigen::Scaling(2 * arm_radius, 2 * arm_radius, 0.09465),
+    Eigen::Translation3d(-arm_radius, -arm_radius, -arm_radius) *
+        Eigen::Scaling(2 * arm_radius, 2 * arm_radius, arm_radius + 0.0825),
+    Eigen::Translation3d(-arm_radius, -arm_radius, 0) *
+        Eigen::Scaling(2 * arm_radius, 2 * arm_radius, arm_radius)};
+
+// Rotate the arm
+static const Eigen::Affine3d globalTrans =
+    (Eigen::Affine3d)(Eigen::Matrix3d() << 1, 0, 0, 0, 0, 1, 0, -1, 0)
+        .finished();
+
+void SelectUI::InvalidateFK() {
+  auto& robotLayer = viewer->data((int)LayerId::Robot);
+  robotLayer.clear();
+
+  std::vector<Eigen::Affine3d> trans;
+  robots::ForwardIntermediate(m_jointConfigs, trans);
+
+  Eigen::MatrixXd AV(6 * 4, 3);
+  Eigen::MatrixXi AE(6 * 3, 2);
+
+  Eigen::MatrixXd V(6 * 8, 3);
+  Eigen::MatrixXi F(6 * 12, 3);
+
+  for (size_t i = 0; i < 6; i++) {
+    Eigen::Affine3d curTrans = globalTrans * trans[i];
+    F.block<12, 3>(i * 12, 0) = cube_F.array() + (8 * i);
+    V.block<8, 3>(i * 8, 0).transpose() =
+        (curTrans * localTrans[i] * cube_V.transpose());
+
+    AV.block<4, 3>(i * 4, 0).transpose() =
+        curTrans * (0.1 * axis_V).transpose();
+    AE.block<3, 2>(i * 3, 0) = axis_E.array() + (4 * i);
+  }
+
+  robotLayer.set_mesh(V, F);
+  robotLayer.set_edges(AV, AE, Eigen::Matrix3d::Identity().replicate<6, 1>());
+  robotLayer.set_face_based(true);
+  robotLayer.line_width = 2;
+
+  Eigen::Affine3d effectorTrans = globalTrans * robots::Forward(m_jointConfigs);
+  m_position = effectorTrans.translation();
+  m_eulerAngles = effectorTrans.linear().eulerAngles(1, 0, 2);
+
+}
+
+void SelectUI::InvalidateIK() {
+  Eigen::Affine3d trans =
+      globalTrans.inverse() * Eigen::Translation3d(m_position) *
+      Eigen::AngleAxisd(m_eulerAngles(0), Eigen::Vector3d::UnitY()) *
+      Eigen::AngleAxisd(m_eulerAngles(1), Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(m_eulerAngles(2), Eigen::Vector3d::UnitZ());
+
+  if (robots::Inverse(trans.linear(), trans.translation(), m_ikSolutions)) {
+    m_jointConfigs = m_ikSolutions[0];
+    m_ikSelectedIndex = 0;
+    m_ikSolutionValid = true;
+    InvalidateFK();
+  } else {
+    m_ikSolutionValid = false;  
+  }
 }
 
 static const Eigen::Vector3d c_gravity(0, -1, 0);
@@ -397,6 +512,13 @@ void SelectUI::CheckMinForce() {
     }
   }
   InvalidateMinForces();
+}
+
+void SelectUI::ToggleIKSolution() {
+  if (!m_ikSolutionValid) return;
+  m_ikSelectedIndex = (m_ikSelectedIndex + 1) % m_ikSolutions.size();
+  m_jointConfigs = m_ikSolutions[m_ikSelectedIndex];
+  InvalidateFK();
 }
 
 bool SelectUI::post_load() {

@@ -22,10 +22,12 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
  public:
   enum class LayerId : int {
     Mesh = 0,
+    Axis,
     ContactPoints,
     CenterOfMass,
     Feasible,
     MinForces,
+    Robot,
     Max
   };
 
@@ -58,9 +60,13 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void InvalidateMesh();
   void InvalidateFeasible();
   void InvalidateMinForces();
+  void InvalidateFK();
+  void InvalidateIK();
 
   void CheckFeasibility();
   void CheckMinForce();
+
+  void ToggleIKSolution();
 
   // Mouse
   double m_mouse_x;
@@ -88,6 +94,16 @@ class SelectUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   // Coeffs
   double m_friction = 0.5;
   size_t m_coneRes = 4;
+
+  // FK
+  std::vector<double> m_jointConfigs;
+
+  // IK
+  Eigen::Vector3d m_position;
+  Eigen::Vector3d m_eulerAngles;
+  std::vector<std::vector<double>> m_ikSolutions;
+  size_t m_ikSelectedIndex;
+  bool m_ikSolutionValid = false;
 
   // Task
   std::deque<std::pair<std::unique_ptr<std::atomic<bool>>,

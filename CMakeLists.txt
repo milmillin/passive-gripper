@@ -136,7 +136,7 @@ endif()
 
 set(UI_LINK_LIBS psg-core igl::core igl::opengl_glfw igl::opengl_glfw_imgui Boost::filesystem Boost::system)
 
-set(BATCH_LINK_LIBS core Boost::filesystem Boost::system)
+set(BATCH_LINK_LIBS psg-core Boost::filesystem Boost::system)
 if (NOT MSVC)
     list(APPEND BATCH_LINK_LIBS stdc++fs)
 endif()

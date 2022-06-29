@@ -1,0 +1,6 @@
+[submodule "external/libigl"]
+	path = external/libigl
+	url = https://github.com/milmillin/libigl.git
+[submodule "external/autodiff"]
+	path = external/autodiff
+	url = https://github.com/LouYu2015/autodiff.git

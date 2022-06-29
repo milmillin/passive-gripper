@@ -4,3 +4,6 @@
 [submodule "external/autodiff"]
 	path = external/autodiff
 	url = https://github.com/LouYu2015/autodiff.git
+[submodule "external/swept-volumes"]
+	path = external/swept-volumes
+	url = https://github.com/milmillin/swept-volumes.git

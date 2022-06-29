@@ -5,8 +5,8 @@ Public code release for ["Computational Design of Passive Grippers"](https://hom
 # Installation
 
 ```bash
-git clone https://github.com/milmillin/passive-gripper-v2.git
-cd passive-gripper-v2
+git clone https://github.com/milmillin/passive-gripper.git
+cd passive-gripper
 git submodule update --init --recursive
 ```
 ## Dependencies

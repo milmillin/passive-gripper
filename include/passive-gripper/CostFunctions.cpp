@@ -7,80 +7,30 @@
 namespace psg {
 
 // See CHOMP paper page 4
-static double PotentialSDF(double s, double& out_dP_ds) {
+static double PotentialSDF(double s) {
   static constexpr double epsilon = 0.001;
-  if (s > epsilon) {
-    out_dP_ds = 0;
-    return 0;
-  }
-  if (s < 0) {
-    out_dP_ds = -1;
-    return -s + (epsilon / 2.);
-  }
+  if (s > epsilon) return 0;
+  if (s < 0) return -s + (epsilon / 2.);
   double tmp = s - epsilon;
-  out_dP_ds = s / epsilon - 1;
   return tmp * tmp / (2. * epsilon);
 }
 
 static double GetDist(const Eigen::Vector3d& p,
                       const CostSettings& settings,
-                      const MeshDependentResource& mdr,
-                      Eigen::RowVector3d& out_ds_dp) {
+                      const MeshDependentResource& mdr) {
   Eigen::RowVector3d c;
   double sign;
   double s = mdr.ComputeSignedDistance(p, c, sign);
   double sFloor = p.y() - settings.floor;
-  if (s < sFloor) {
-    if (s < 0)
-      out_ds_dp = (c - p.transpose()).normalized();
-    else
-      out_ds_dp = (p.transpose() - c).normalized();
-    return s;
-  } else {
-    out_ds_dp = Eigen::RowVector3d::UnitY();
-    return sFloor;
-  }
-}
-
-static double Norm(const Eigen::Vector3d& x1,
-                   const Eigen::Vector3d& x2,
-                   Eigen::RowVector3d& out_dNorm_dx1) {
-  Eigen::RowVector3d x12 = (x1 - x2).transpose();
-  double norm = x12.norm();
-  out_dNorm_dx1 = x12 / norm;
-  return norm;
+  if (s < sFloor) return s;
+  return sFloor;
 }
 
 double EvalAt(const Eigen::Vector3d& p,
               const CostSettings& settings,
-              const MeshDependentResource& mdr,
-              Eigen::RowVector3d& out_dc_dp) {
-  Eigen::RowVector3d ds_dp;
-  double dP_ds;
-  double result = PotentialSDF(GetDist(p, settings, mdr, ds_dp), dP_ds);
-  out_dc_dp = dP_ds * ds_dp;
+              const MeshDependentResource& mdr) {
+  double result = PotentialSDF(GetDist(p, settings, mdr));
   return result;
-}
-
-double ComputeDuration(const Pose& p1,
-                       const Pose& p2,
-                       double ang_velocity,
-                       size_t& out_idx,
-                       bool& out_flip) {
-  Pose dp = (p2 - p1) / ang_velocity;
-  double duration = -1;
-  out_idx = -1;
-  for (size_t i = 0; i < kNumDOFs; i++) {
-    double d = dp(i);
-    bool flip = d < 0;
-    if (flip) d = -d;
-    if (d > duration) {
-      duration = d;
-      out_idx = i;
-      out_flip = flip;
-    }
-  }
-  return duration;
 }
 
 double MinDistance(const GripperParams& params,
@@ -151,10 +101,9 @@ double MinDistance(const GripperParams& params,
 #pragma omp parallel
       {
         double t_min = 0;
-        Eigen::RowVector3d ds_dp;  // unused
 #pragma omp for nowait
         for (long long k = 0; k < f.rows(); k++) {
-          t_min = std::min(t_min, GetDist(f.row(k), settings.cost, mdr, ds_dp));
+          t_min = std::min(t_min, GetDist(f.row(k), settings.cost, mdr));
         }
 #pragma omp critical
         min_dist = std::min(min_dist, t_min);
@@ -183,8 +132,6 @@ static double ComputeCollisionPenaltySegment(const Eigen::Vector3d& A,
                                              _SegState& state,
                                              Debugger* const debugger,
                                              const Eigen::RowVector3d& color) {
-  const Eigen::MatrixXd& SP_ = mdr.GetSP();
-  const Eigen::MatrixXi& SP_par_ = mdr.GetSPPar();
   Eigen::RowVector3d dir = B - A;
   double norm = dir.norm();
   if (norm < 1e-12 || isnan(norm)) return 0;
@@ -241,6 +188,8 @@ static double ComputeCollisionPenaltySegment(const Eigen::Vector3d& A,
         soft_assert(state.last_pos_vid != -1llu);
 
         if (geodesic_contrib != 0.) {
+          const Eigen::MatrixXd& SP_ = mdr.GetSP();
+          const Eigen::MatrixXi& SP_par_ = mdr.GetSPPar();
           total_dis += (state.last_pos_vid_dis + SP_(state.last_pos_vid, vid) +
                         best_dist) *
                        geodesic_contrib;
@@ -519,63 +468,6 @@ double ComputeCost_SP(const GripperParams& params,
          settings.cost.traj_energy * trajectory_energy +
          settings.cost.robot_collision * robot_floor +
          settings.cost.regularization * traj_reg;
-}
-
-bool Intersects(const GripperParams& params,
-                const GripperSettings& settings,
-                const MeshDependentResource& mdr) {
-  const size_t nTrajectorySteps = settings.cost.n_trajectory_steps;
-  const double trajectoryStep = 1. / nTrajectorySteps;
-
-  const size_t nKeyframes = params.trajectory.size();
-  const size_t nFingers = params.fingers.size();
-  const size_t nFingerJoints = settings.finger.n_finger_joints;
-  const size_t nFrames = (nKeyframes - 1) * nTrajectorySteps + 1;
-
-  if (params.fingers.size() == 0 || params.trajectory.size() <= 1llu)
-    return false;
-
-  std::vector<Eigen::MatrixXd> sv_V(
-      nFingers, Eigen::MatrixXd(nFingerJoints * nFrames, 3));
-  Eigen::MatrixXi sv_F((nFingerJoints - 1) * (nFrames - 1) * 2, 3);
-
-  Eigen::Affine3d finger_trans_inv =
-      robots::Forward(params.trajectory.front()).inverse();
-
-  Eigen::MatrixXi sv_F_template((nFingerJoints - 1) * 2, 3);
-  for (size_t i = 0; i < nFingerJoints - 1; i++) {
-    sv_F_template.row(i * 2) = Eigen::RowVector3i(i, i + nFingerJoints, i + 1);
-    sv_F_template.row(i * 2 + 1) =
-        Eigen::RowVector3i(i + 1, i + nFingerJoints, i + nFingerJoints + 1);
-  }
-  for (size_t j = 0; j < nFrames - 1; j++) {
-    sv_F.block(j * (nFingerJoints - 1) * 2, 0, (nFingerJoints - 1) * 2, 3) =
-        sv_F_template.array() + (j * nFingerJoints);
-  }
-  for (size_t i = 0; i < nFingers; i++) {
-    for (size_t j = 0; j < nFrames; j++) {
-      size_t a = j / nTrajectorySteps;
-      size_t b = j % nTrajectorySteps;
-      if (a == nKeyframes - 1) {
-        a--;
-        b = nTrajectorySteps;
-      }
-      double t = (double)b / nTrajectorySteps;
-
-      Pose l_pose =
-          params.trajectory[a] * (1. - t) + params.trajectory[a + 1] * (t);
-
-      Eigen::Affine3d cur_trans = robots::Forward(l_pose) * finger_trans_inv;
-      sv_V[i].block(j * nFingerJoints, 0, nFingerJoints, 3) =
-          (cur_trans * params.fingers[i].transpose().colwise().homogeneous())
-              .transpose();
-    }
-    Eigen::MatrixXi IF;
-    bool intersect = igl::copyleft::cgal::intersect_other(
-        mdr.V, mdr.F, sv_V[i], sv_F, true, IF);
-    if (intersect) return true;
-  }
-  return false;
 }
 
 }  // namespace psg

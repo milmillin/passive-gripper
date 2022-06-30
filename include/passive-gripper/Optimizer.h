@@ -15,10 +15,10 @@
 
 namespace psg {
 
-size_t MyFlattenSize(const GripperParams& meta);
-void MyUnflatten(GripperParams& meta, const double* x);
-void MyFlattenGrad(const GripperParams& meta, double* x);
-
+/// <summary>
+/// CostDebugInfo contains the parameter and the cost. It is used to keep track
+/// of the cost at each iteration.
+/// </summary>
 struct CostDebugInfo : serialization::Serializable {
   GripperParams param;
   double cost;
@@ -40,13 +40,38 @@ struct CostDebugInfo : serialization::Serializable {
   }
 };
 
+/// <summary>
+/// Optimizer manages the insert trajectory optimiztaion.
+/// </summary>
 class Optimizer {
  public:
   ~Optimizer();
+
+  /// <summary>
+  /// Asynchronously starts an optimization
+  /// </summary>
+  /// <param name="psg">Passive gripper object</param>
   void Optimize(const PassiveGripper& psg);
+
+  /// <summary>
+  /// Block until the optimization finishes
+  /// </summary>
   void Wait();
+
+  /// <summary>
+  /// Cancel the optimization
+  /// </summary>
   void Cancel();
+
+  /// <summary>
+  /// Restart the optimization with current parameters. This method is
+  /// asynchronous.
+  /// </summary>
   void Resume();
+
+  /// <summary>
+  /// Invalidate the optimizer.
+  /// </summary>
   void Reset();
 
   inline bool IsRunning() { return opt_ != nullptr && is_running_; };

@@ -15,7 +15,4 @@ void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn);
 void GenerateCPX(const psg::PassiveGripper& psg,
                  const std::string& cpx_fn);
 
-constexpr size_t CPX_N_SEEDS = 1000;
-constexpr size_t CPX_N_CANDIDATES = 3000;
-
 }  // namespace psg_batch

@@ -51,11 +51,9 @@ void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn) {
 
 void GenerateCPX(const psg::PassiveGripper& psg,
                  const std::string& cpx_fn) {
-  psg::ContactPointFilter cp_filter;
-
   auto start_time = std::chrono::high_resolution_clock::now();
-  auto cps = psg::InitializeContactPoints(
-      psg, cp_filter, CPX_N_SEEDS, CPX_N_CANDIDATES);
+  auto cps = psg::InitializeGCs(
+      psg, psg::kNSeeds, psg::kNCandidates);
   auto stop_time = std::chrono::high_resolution_clock::now();
   long long duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                            stop_time - start_time)

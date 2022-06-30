@@ -82,6 +82,10 @@ static constexpr double kWrenchNormThresh = 1e-5;
 
 constexpr double kExpandMesh = 0.002; // 2mm
 
+// GC Generations
+constexpr size_t kNSeeds = 1000;
+constexpr size_t kNCandidates = 3000;
+
 const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"ETA", "0.4"},
                                                         {"DOF_PN", "3"},

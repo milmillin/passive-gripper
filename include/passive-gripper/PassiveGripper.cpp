@@ -372,9 +372,7 @@ void PassiveGripper::InvalidateFinger() {
     if (reinit_trajectory) {
       // Re-initialize trajectory
       params_.trajectory =
-          InitializeTrajectory(params_.fingers,
-                               params_.trajectory.front(),
-                               settings_.trajectory.n_keyframes);
+          InitializeTrajectory(params_.fingers, params_.trajectory.front());
       trajectory_changed_ = true;
     }
   }

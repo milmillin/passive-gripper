@@ -13,6 +13,9 @@
 
 namespace psg {
 
+/// <summary>
+/// PassiveGripper contains the mesh, current parameters, and settings.
+/// </summary>
 class PassiveGripper : public psg::serialization::Serializable {
  public:
   enum class InvalidatedReason {
@@ -32,7 +35,7 @@ class PassiveGripper : public psg::serialization::Serializable {
   }
   void ForceInvalidateAll(bool disable_reinit = false);
 
-  // Mesh
+  // === Mesh ===
   static constexpr int kRemeshVersion = 1;
   void GenerateRemesh();
   void SetMesh(const Eigen::MatrixXd& V,
@@ -41,9 +44,20 @@ class PassiveGripper : public psg::serialization::Serializable {
                const Eigen::MatrixXi& remesh_F,
                int remesh_version,
                bool invalidate = true);
+
+  /// <summary>
+  /// Set the input mesh.
+  ///
+  /// This will invalidate the skeleton and trajectory unless disabled
+  /// (see <see cref="reinit_trajectory" /> and <see cref="reinit_fingers" />).
+  /// </summary>
+  /// <param name="V">Input mesh vertices</param>
+  /// <param name="F">Input mesh faces</param>
+  /// <param name="invalidate">If false, defer the invalidation.</param>
   void SetMesh(const Eigen::MatrixXd& V,
                const Eigen::MatrixXi& F,
                bool invalidate = true);
+
   inline void GetMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const {
     V = mdr_.V;
     F = mdr_.F;
@@ -51,24 +65,77 @@ class PassiveGripper : public psg::serialization::Serializable {
   void SetMeshTrans(const Eigen::Affine3d& trans);
   void TransformMesh(const Eigen::Affine3d& trans);
 
-  // Contact Point
+  // === Contact Point ===
+
+  /// <summary>
+  /// Add a contact point.
+  /// This will invalidate the skeleton and trajectory unless disabled.
+  /// </summary>
+  /// <param name="contact_point">Contact point to be added</param>
   void AddContactPoint(const ContactPoint& contact_point);
+
+  /// <summary>
+  /// Set the contact points (aka GC).
+  /// This will invalidate the skeleton and trajectory unless disabled.
+  /// </summary>
+  /// <param name="contact_points">A list of contact points to be set</param>
   void SetContactPoints(const std::vector<ContactPoint>& contact_points);
+
+  /// <summary>
+  /// Remove a contact point given the index.
+  /// This will invalidate the skeleton and trajectory unless disabled.
+  /// </summary>
+  /// <param name="index">The index of the contact point to be removed</param>
   void RemoveContactPoint(size_t index);
+
+  /// <summary>
+  /// Remove all the contact points
+  /// This will invalidate the skeleton and trajectory unless disabled.
+  /// </summary>
   void ClearContactPoint();
 
-  // Trajectory
+  // === Trajectory ===
+
+  /// <summary>
+  /// Add a keyframe to the end of the trajectory.
+  /// Note that the trajectory is reversed (i.e., the first keyframe is when the
+  /// gripper touches the object).
+  /// </summary>
+  /// <param name="pose">The keyframe to be added</param>
   void AddKeyframe(const Pose& pose);
+
+  /// <summary>
+  /// Edit the indexed keyframe
+  /// </summary>
+  /// <param name="index">Index of the keyframe to be edited</param>
+  /// <param name="pose">New keyframe value</param>
   void EditKeyframe(size_t index, const Pose& pose);
+
+  /// <summary>
+  /// Remove the indexed keyframe
+  /// </summary>
+  /// <param name="index">The index of the keyframe to be removed</param>
   void RemoveKeyframe(size_t index);
+
+  /// <summary>
+  /// Remove all the keyframes except the first keyframe (when the gripper
+  /// touches the object).
+  /// </summary>
   void ClearKeyframe();
+
+  /// <summary>
+  /// Set the trajectory.
+  /// </summary>
+  /// <param name="trajectory">A list of new keyframes</param>
   void SetTrajectory(const Trajectory& trajectory);
+
   inline const Trajectory& GetTrajectory() const { return params_.trajectory; }
   inline Eigen::Affine3d GetFingerTransInv() const {
     return robots::Forward(params_.trajectory.front()).inverse();
   }
 
-  // Settings
+  // === Settings ===
+  
   void SetContactSettings(const ContactSettings& settings);
   void SetFingerSettings(const FingerSettings& settings);
   void SetTrajectorySettings(const TrajectorySettings& settings);
@@ -77,13 +144,25 @@ class PassiveGripper : public psg::serialization::Serializable {
   void SetCostSettings(const CostSettings& settings);
   void SetSettings(const GripperSettings& settings, bool invalidate = true);
 
-  // Params
+  // === Params ===
+
+  /// <summary>
+  /// Set the parameters (skeleton and trajectory).
+  /// </summary>
+  /// <param name="params">New parameters</param>
+  /// <param name="invalidate">If false, defer the invalidation.</param>
   void SetParams(const GripperParams& params, bool invalidate = true);
 
-  // Initialization
+  // === Initialization ===
+
+  /// <summary>
+  /// Initialize bounding box for topology optimization.
+  /// </summary>
   void InitGripperBound();
 
+  // whether to reinitialize the trajectory when settings changed
   bool reinit_trajectory = true;
+  // whether to reinitialize the fingers when settings changed.
   bool reinit_fingers = true;
 
  private:
@@ -108,8 +187,6 @@ class PassiveGripper : public psg::serialization::Serializable {
   double partial_min_wrench_;
   double cost_;
   double min_dist_;
-
-  GripperParams dCost_dParam_;
 
   // state dependency
   bool mesh_changed_ = false;
@@ -163,7 +240,6 @@ class PassiveGripper : public psg::serialization::Serializable {
   DECLARE_GETTER(GetMinWrench, min_wrench_)
   DECLARE_GETTER(GetPartialMinWrench, partial_min_wrench_)
   DECLARE_GETTER(GetCost, cost_)
-  DECLARE_GETTER(GetGradient, dCost_dParam_)
   DECLARE_GETTER(GetMinDist, min_dist_)
   DECLARE_GETTER(GetParams, params_)
   DECLARE_GETTER(GetSettings, settings_)

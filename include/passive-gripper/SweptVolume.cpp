@@ -1,12 +1,12 @@
 #include "SweptVolume.h"
 
+#include <gradient_descent_test.h>
 #include <igl/AABB.h>
 #include <igl/WindingNumberAABB.h>
 #include <igl/copyleft/cgal/mesh_boolean.h>
 #include <igl/copyleft/marching_cubes.h>
 #include <igl/fast_winding_number.h>
 #include <igl/random_points_on_mesh.h>
-#include <gradient_descent_test.h>
 #include <sparse_continuation.h>
 #include <cmath>
 #include <vector>
@@ -465,50 +465,5 @@ void NegativeSweptVolumePSG(const PassiveGripper& psg,
       out_F,
       num_seeds);
 }
-
-void PiNegativeSweptVolumePSG(const PassiveGripper& psg,
-                              Eigen::MatrixXd& out_V,
-                              Eigen::MatrixXi& out_F,
-                              const int num_seeds) {
-  Eigen::Vector3d floor(0, 0, 0);
-  Eigen::Vector3d floor_N(0, 1, 0);
-  Eigen::Affine3d finger_trans_inv = psg.GetFingerTransInv();
-  floor = finger_trans_inv * floor;
-  floor_N = finger_trans_inv.linear() * floor_N;
-
-  Eigen::Vector3d pi_lb;
-  Eigen::Vector3d pi_ub;
-  InitializeConservativeBound(psg, pi_lb, pi_ub);
-  NegativeSweptVolume(
-      (finger_trans_inv * psg.GetMeshV().transpose().colwise().homogeneous())
-          .transpose(),
-      psg.GetMeshF(),
-      GetTransformations(psg),
-      pi_lb,
-      pi_ub,
-      floor,
-      floor_N,
-      psg.GetTopoOptSettings().neg_vol_res,
-      out_V,
-      out_F,
-      num_seeds);
-}
-
-/*
-void SweptVolumePSG(const PassiveGripper& psg,
-                    Eigen::MatrixXd& out_V,
-                    Eigen::MatrixXi& out_F,
-                    const int num_seeds) {
-  SweptVolume((psg.GetFingerTransInv() *
-               psg.GetMeshV().transpose().colwise().homogeneous())
-                  .transpose(),
-              psg.GetMeshF(),
-              GetTransformations(psg),
-              psg.GetTopoOptSettings().neg_vol_res,
-              out_V,
-              out_F,
-              num_seeds);
-}
-*/
 
 }  // namespace psg

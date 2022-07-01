@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <limits>
 
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <CGAL/Polyhedron_3.h>
@@ -17,8 +18,6 @@
 #include <list>
 
 #include "robots/Robots.h"
-
-#include "UnionFind.h"
 
 namespace psg {
 
@@ -594,6 +593,27 @@ void CreateCone(const Eigen::Vector3d& O,
     out_F.row(res + i - 2) << 1, i, i + 1;
   }
 }
+
+class UnionFind {
+ public:
+  UnionFind(size_t size) : parent(size, std::numeric_limits<size_t>::max()) {}
+  void merge(size_t a, size_t b) {
+    size_t ancestor_a = find(a);
+    size_t ancestor_b = find(b);
+    if (ancestor_a != ancestor_b) {
+      parent[ancestor_b] = ancestor_a;
+    }
+  }
+  size_t find(size_t a) {
+    if (parent[a] == std::numeric_limits<size_t>::max()) {
+      return a;
+    }
+    return parent[a] = find(parent[a]);
+  }
+
+ private:
+  std::vector<size_t> parent;
+};
 
 void MergeMesh(const Eigen::MatrixXd& V,
                const Eigen::MatrixXi& F,

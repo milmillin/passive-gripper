@@ -250,10 +250,10 @@ void MainUI::OnTrajectoryInvalidated(Layer layer) {
 
   Eigen::RowVector3d color;
   if (layer == Layer::kTrajectory)
-    color = Eigen::RowVector3d(0.7, 0, 0.8);
+    color = Eigen::RowVector3d(1, 0.8, 0);
   else {
     if (!vm_.GetInitParamValid()) return;
-    color = Eigen::RowVector3d(0.7, 0.8, 0);
+    color = Eigen::RowVector3d(0, 0.8, 0.8);
   }
 
   const Trajectory& trajectory = (layer == Layer::kTrajectory)
@@ -269,7 +269,7 @@ void MainUI::OnTrajectoryInvalidated(Layer layer) {
 
   for (size_t i = 0; i < nKeyframe; i++) {
     Eigen::Affine3d curTrans = robots::Forward(trajectory[i]);
-    V.block<4, 3>(i * 4, 0).transpose() = curTrans * (0.1 * axis_V).transpose();
+    V.block<4, 3>(i * 4, 0).transpose() = curTrans * (0.01 * axis_V).transpose();
     E.block<3, 2>(i * 3, 0) = axis_E.array() + (4 * i);
     C.block<3, 3>(i * 3, 0) = Eigen::Matrix3d::Identity();
     if (i + 1 < nKeyframe) {
@@ -280,7 +280,7 @@ void MainUI::OnTrajectoryInvalidated(Layer layer) {
   }
 
   trajectoryLayer.set_edges(V, E, C);
-  trajectoryLayer.line_width = 2;
+  trajectoryLayer.line_width = 5;
 }
 
 void MainUI::OnSweptSurfaceInvalidated() {

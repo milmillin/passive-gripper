@@ -4,12 +4,12 @@
 
 #include <passive-gripper/GeometryUtils.h>
 
+#include <igl/marching_cubes.h>
 #include <igl/unproject_onto_mesh.h>
-#include "Components.h"
+#include <igl/voxel_grid.h>
 #include <passive-gripper/Initialization.h>
 #include <passive-gripper/TopoOpt.h>
-#include <igl/voxel_grid.h>
-#include <igl/marching_cubes.h>
+#include "Components.h"
 
 namespace psg {
 namespace ui {
@@ -46,6 +46,7 @@ void MainUI::init(igl::opengl::glfw::Viewer* viewer_) {
   floorLayer.show_lines = false;
   floorLayer.set_visible(false, -1);
   GetLayer(Layer::kContactFloor).set_visible(false, -1);
+  GetLayer(Layer::kRemesh).set_visible(false, -1);
 }
 
 inline bool MainUI::pre_draw() {
@@ -128,9 +129,6 @@ void MainUI::draw_viewer_menu() {
   ImGui::SameLine();
   if (ImGui::Button("Save Mesh", ImVec2((w - p) / 2, 0))) {
     OnSaveMeshClicked();
-  }
-  if (ImGui::Button("Merge mesh", ImVec2(w, 0))) {
-    OnMergeMeshClicked();
   }
   ImGui::Checkbox("Millimeter", &is_millimeter_);
   ImGui::Checkbox("Swap YZ", &is_swap_yz_);
@@ -260,8 +258,8 @@ void MainUI::DrawToolPanel() {
   if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("Tools");
     DrawToolButton("None", Tools::kNone, w);
+    DrawToolButton("Mesh Manipulation", Tools::kMeshPosition, w);
     DrawToolButton("Contact Point", Tools::kContactPoint, w);
-    DrawToolButton("Mesh Position", Tools::kMeshPosition, w);
     DrawToolButton("Trajectory", Tools::kRobot, w);
     DrawToolButton("Optimization", Tools::kOptimization, w);
     DrawToolButton("Topo Opt", Tools::kTopoOpt, w);
@@ -291,31 +289,14 @@ void MainUI::DrawContactPointPanel() {
     if (finger_update) vm_.PSG().SetFingerSettings(finger_settings);
     if (contact_update) vm_.PSG().SetContactSettings(contact_settings);
   }
-  if (ImGui::CollapsingHeader("Contact Points",
+  if (ImGui::CollapsingHeader("Candidates Generation",
                               ImGuiTreeNodeFlags_DefaultOpen)) {
-    size_t to_delete = -1;
-    const auto& contact_points = vm_.PSG().GetContactPoints();
-    for (size_t i = 0; i < contact_points.size(); i++) {
-      snprintf(buf_, sizeof(buf_), "Delete C%llu", i);
-      if (ImGui::Button(buf_, ImVec2(w, 0))) {
-        to_delete = i;
-      }
-    }
-    if (to_delete != -1) {
-      vm_.PSG().RemoveContactPoint(to_delete);
-    }
-    ImGui::Separator();
-    if (ImGui::Button("Delete All Contact Points", ImVec2(w, 0))) {
-      vm_.PSG().ClearContactPoint();
-    }
-  }
-  if (ImGui::CollapsingHeader("Candidates", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::InputInt("# Candidates", (int*)&cp_num_candidates, 1000);
-    ImGui::InputInt("# Seeds", (int*)&cp_num_seeds, 1000);
+    ImGui::InputInt("# Candidates", (int*)&cp_num_candidates, kNCandidates);
+    ImGui::InputInt("# Seeds", (int*)&cp_num_seeds, kNSeeds);
     if (ImGui::Button("Generate Candidates", ImVec2(w, 0))) {
       auto start_time = std::chrono::high_resolution_clock::now();
-      contact_point_candidates_ = InitializeGCs(
-          vm_.PSG(), cp_num_candidates, cp_num_seeds);
+      contact_point_candidates_ =
+          InitializeGCs(vm_.PSG(), cp_num_candidates, cp_num_seeds);
       auto stop_time = std::chrono::high_resolution_clock::now();
       long long duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(stop_time -
@@ -332,19 +313,8 @@ void MainUI::DrawContactPointPanel() {
       ImGui::PushID(std::to_string(i).c_str());
       if (ImGui::Button("Select")) {
         const ContactPointMetric& cp = contact_point_candidates_[i];
-        // vm_.PSG().reinit_trajectory = false;
         vm_.PSG().SetContactPoints(cp.contact_points);
         std::cout << i << "-th candidate selected" << std::endl;
-        // vm_.PSG().ClearKeyframe();
-
-        // std::vector<Pose> candidates;
-        // size_t best_i;
-        // if (robots::BestInverse(cp.trans * robots::Forward(kInitPose),
-        // kInitPose,
-        // candidates,
-        // best_i)) {
-        // vm_.PSG().AddKeyframe(FixAngles(kInitPose, candidates[best_i]));
-        // }
       }
       ImGui::SameLine();
       ImGui::Text("(%d) dist: %d mw: %.4e, pmw: %.4e",
@@ -356,11 +326,29 @@ void MainUI::DrawContactPointPanel() {
     }
     ImGui::PopID();
     ImGui::Separator();
-    if (ImGui::Button("Save Candidates", ImVec2(w, 0))) {
+    if (ImGui::Button("Save Candidates (.cpx)", ImVec2(w, 0))) {
       OnExportContactPointCandidates();
     }
-    if (ImGui::Button("Load Candidates", ImVec2(w, 0))) {
+    if (ImGui::Button("Load Candidates (.cpx)", ImVec2(w, 0))) {
       OnLoadContactPointCandidates();
+    }
+  }
+  if (ImGui::CollapsingHeader("Contact Points",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
+    size_t to_delete = -1;
+    const auto& contact_points = vm_.PSG().GetContactPoints();
+    for (size_t i = 0; i < contact_points.size(); i++) {
+      snprintf(buf_, sizeof(buf_), "Delete C%llu", i);
+      if (ImGui::Button(buf_, ImVec2(w, 0))) {
+        to_delete = i;
+      }
+    }
+    if (to_delete != -1) {
+      vm_.PSG().RemoveContactPoint(to_delete);
+    }
+    ImGui::Separator();
+    if (ImGui::Button("Delete All Contact Points", ImVec2(w, 0))) {
+      vm_.PSG().ClearContactPoint();
     }
   }
 }
@@ -384,12 +372,15 @@ void MainUI::DrawTransformPanel() {
       vm_.PSG().TransformMesh(trans);
     }
   }
-  if (ImGui::CollapsingHeader("Remesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Mesh Manipulation", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Remesh##a", ImVec2(w, 0))) {
       Eigen::MatrixXd V;
       Eigen::MatrixXi F;
       Remesh(vm_.PSG().GetMeshV(), vm_.PSG().GetMeshF(), 1, V, F);
       vm_.SetMesh(V, F);
+    }
+    if (ImGui::Button("Merge mesh", ImVec2(w, 0))) {
+      OnMergeMeshClicked();
     }
   }
 }
@@ -529,6 +520,7 @@ void MainUI::DrawOptimizationPanel() {
         ImGui::InputDouble("Gripper Energy", &cost_settings.gripper_energy, 1);
     cost_update |=
         ImGui::InputDouble("Traj Energy", &cost_settings.traj_energy, 1);
+    cost_update |= ImGui::Checkbox("Use Adaptive Subdivision", &cost_settings.use_adaptive_subdivision);
     ImGui::Checkbox("Debug", &optimizer_.debug);
     if (opt_update) vm_.PSG().SetOptSettings(opt_settings);
     if (cost_update) vm_.PSG().SetCostSettings(cost_settings);

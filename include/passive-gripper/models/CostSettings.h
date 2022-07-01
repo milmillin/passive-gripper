@@ -16,7 +16,7 @@ struct CostSettings : psg::serialization::Serializable {
   double inner_dis_contrib = kInnerDistContrib;
   double d_subdivision = kDistSubdivision;
   double d_linearity = kDistLinearity;
-  double use_adaptive_subdivision = kUseAdaptiveSubdivision;
+  bool use_adaptive_subdivision = kUseAdaptiveSubdivision;
 
   DECL_SERIALIZE() {
     constexpr int version = 6;

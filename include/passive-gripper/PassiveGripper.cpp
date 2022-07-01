@@ -86,6 +86,8 @@ void PassiveGripper::SetMesh(const Eigen::MatrixXd& V,
                              int remesh_version,
                              bool invalidate) {
   mdr_.init(V, F);
+  mesh_trans_ = Eigen::Affine3d::Identity();
+  mesh_trans_.translate(mdr_.center_of_mass);
 
   if (remesh_version != kRemeshVersion) {
     std::cerr << "Wrong remesh version. Expected: " << kRemeshVersion

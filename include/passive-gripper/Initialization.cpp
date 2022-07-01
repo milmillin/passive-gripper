@@ -257,10 +257,9 @@ void InitializeContactPointSeeds(const PassiveGripper& psg,
   Log() << "Num seeds: " << out_X.size() << std::endl;
 }
 
-std::vector<ContactPointMetric> InitializeGCs(
-    const PassiveGripper& psg,
-    size_t num_candidates,
-    size_t num_seeds) {
+std::vector<ContactPointMetric> InitializeGCs(const PassiveGripper& psg,
+                                              size_t num_candidates,
+                                              size_t num_seeds) {
   const MeshDependentResource& mdr = psg.GetMDR();
   const ContactSettings& settings = psg.GetContactSettings();
   Eigen::Vector3d effector_pos =
@@ -278,13 +277,8 @@ std::vector<ContactPointMetric> InitializeGCs(
   prelim.reserve(num_candidates);
   size_t total_iters = 0;
 
-  // To be used for tolerance check
-  Log() << "Building neighbor info" << std::endl;
-  NeighborInfo neighborInfo(mdr.F);
-  Log() << "Done building neighbor info" << std::endl;
-
   Log() << "Building distance field" << std::endl;
-  DiscreteDistanceField distanceField(mdr.V, mdr.F, 50, effector_pos);
+  DiscreteDistanceField distance_field(mdr.V, mdr.F, 50, effector_pos);
   Log() << "Done building distance field" << std::endl;
 #pragma omp parallel
   {
@@ -309,83 +303,41 @@ std::vector<ContactPointMetric> InitializeGCs(
       int pids[3] = {dist(gen), dist(gen), dist(gen)};
       if (pids[0] == pids[1] || pids[1] == pids[2] || pids[0] == pids[2])
         continue;
-      std::vector<ContactPoint> contactPoints(3);
-      std::vector<std::vector<int>> neighbors;
+      std::vector<ContactPoint> contact_points(3);
       for (int i = 0; i < 3; i++) {
-        contactPoints[i].position = X[pids[i]];
-        contactPoints[i].normal = mdr.FN.row(FI[pids[i]]);
-        contactPoints[i].fid = FI[pids[i]];
-
-        // Check tolerance
-        neighbors.push_back(
-            neighborInfo.GetNeighbors(contactPoints[i], mdr.V, mdr.F, 0.001));
+        contact_points[i].position = X[pids[i]];
+        contact_points[i].normal = mdr.FN.row(FI[pids[i]]);
+        contact_points[i].fid = FI[pids[i]];
       }
 
       // Check Feasibility: Minimum Wrench
-      bool passMinimumWrench = true;
-      std::vector<ContactPoint> contact_cones;
-      double partialMinWrench = 0;
-      int sample;
-      for (sample = 0; sample < 1; sample++) {
-        std::vector<ContactPoint> sample_contact_cones;
-        sample_contact_cones.reserve(3 * settings.cone_res);
-        for (size_t i = 0; i < 3; i++) {
-          const auto&& cone = GenerateContactCone(
-              contactPoints[i], settings.cone_res, settings.friction);
-          sample_contact_cones.insert(
-              sample_contact_cones.end(), cone.begin(), cone.end());
-        }
+      std::vector<ContactPoint> contact_cones = GenerateContactCones(
+          contact_points, settings.cone_res, settings.friction);
 
-        double samplePartialMinWrench =
-            ComputePartialMinWrenchQP(sample_contact_cones,
-                                      mdr.center_of_mass,
-                                      -Eigen::Vector3d::UnitY(),
-                                      Eigen::Vector3d::Zero());
+      double partial_min_wrench =
+          ComputePartialMinWrenchQP(contact_cones,
+                                    mdr.center_of_mass,
+                                    -Eigen::Vector3d::UnitY(),
+                                    Eigen::Vector3d::Zero());
 
-        if (sample == 0) {
-          contact_cones = sample_contact_cones;
-          partialMinWrench = samplePartialMinWrench;
-        }
-
-        if (samplePartialMinWrench == 0) {
-          passMinimumWrench = false;
-          break;
-        }
-
-        // Prepare next sample
-        for (size_t i = 0; i < 3; i++) {
-          std::uniform_int_distribution<> dist(0, neighbors[i].size() - 1);
-          int fid = neighbors[i][dist(gen)];
-          contactPoints[i].normal = mdr.FN.row(fid);
-        }
-      }
       // Get at least a partial closure
-      if (!passMinimumWrench) {
-        // std::cout << "Failed after " << sample << " samples" << std::endl;
-        continue;
-      }
-
-      for (int i = 0; i < 3; i++) {
-        contactPoints[i].normal = mdr.FN.row(contactPoints[i].fid);
-      }
+      if (partial_min_wrench == 0) continue;
 
       // Check Feasiblity: Approach Direction
       Eigen::Affine3d trans;
-      if (!CheckApproachDirection(
-              contactPoints, settings.max_angle, 1, 0.01, 1e-12, 500, trans)) {
-        // std::cout << "Failed due to approach direction" << std::endl;
+      if (!CheckApproachDirection(contact_points, trans, settings.max_angle)) {
         continue;
       }
-      // std::cout << "Success" << std::endl;
-      double minWrench = ComputeMinWrenchQP(contact_cones, mdr.center_of_mass);
+
+      double min_wrench = ComputeMinWrenchQP(contact_cones, mdr.center_of_mass);
 
       ContactPointMetric candidate;
-      candidate.contact_points = contactPoints;
-      candidate.partial_min_wrench = partialMinWrench;
-      candidate.min_wrench = minWrench;
+      candidate.contact_points = contact_points;
+      candidate.partial_min_wrench = partial_min_wrench;
+      candidate.min_wrench = min_wrench;
       candidate.trans = trans;
       candidate.finger_distance =
-          GetFingerDistance(distanceField, contactPoints);
+          GetFingerDistance(distance_field, contact_points);
 #pragma omp critical
       {
         prelim.push_back(candidate);

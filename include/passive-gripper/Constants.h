@@ -11,12 +11,14 @@
 
 namespace psg {
 
+// Angle Helpers
 constexpr double kPi = EIGEN_PI;
 constexpr double kTwoPi = kPi * 2.;
 constexpr double kHalfPi = kPi / 2.;
 const double kDegToRad = kPi / 180.;
 const double kRadToDeg = 180. / kPi;
 
+// UR5 Constants
 constexpr size_t kNumDOFs = 6;
 const double kRobotA[] = {0, -0.425, -0.39225, 0, 0, 0};
 const double kRobotD[] = {0.089159, 0, 0, 0.10915, 0.09465, 0.0823};
@@ -61,6 +63,7 @@ const Eigen::Vector3d kUrdfAxis[6] = {
     Eigen::Vector3d::UnitY(),
 };
 
+// Robot-related typedefs
 typedef Eigen::Array<double, kNumDOFs, 1> Pose;
 typedef std::vector<Pose> Trajectory;
 typedef std::vector<Eigen::MatrixXd> Fingers;
@@ -71,6 +74,7 @@ typedef Eigen::Matrix<double, 3, kNumDOFs> Jacobian;
 // Returns Jacobian (3x6 matrix) given pos in effector space
 typedef std::function<Jacobian(const Eigen::Vector3d&)> JacobianFunc;
 
+// Initial pose (where the gripper touches the object)
 const Pose kInitPose =
     (Pose() << -kHalfPi, -2., -2., 4., -kHalfPi, 0.).finished();
 
@@ -80,12 +84,19 @@ static constexpr double kWrenchReg = 1e-10;
 // zero threshold
 static constexpr double kWrenchNormThresh = 1e-5;
 
+// Expand mesh padding
 constexpr double kExpandMesh = 0.002; // 2mm
 
 // GC Generations
 constexpr size_t kNSeeds = 1000;
 constexpr size_t kNCandidates = 3000;
+// Section 4.2 Constants
+const double kHeuristicsThetaMax = 80 * kDegToRad;
+constexpr double kHeuristicsLR = 0.01;
+constexpr double kHeuristicsThreshold = 1e-12;
+constexpr int kHeuristicsMaxIter = 500;
 
+// Topy Config
 const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"ETA", "0.4"},
                                                         {"DOF_PN", "3"},
@@ -103,6 +114,8 @@ const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"Q_CON", "1"},
                                                         {"Q_MAX", "5"}};
 
+
+// UI Helpers
 const char* const kBoolStr[2] = {"False", "True"};
 
 namespace labels {

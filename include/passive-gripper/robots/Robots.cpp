@@ -13,13 +13,13 @@ static const Eigen::Affine3d globalTrans =
         .finished();
 static const Eigen::Affine3d globalTransInv = globalTrans.inverse();
 
-static void ForwardImpl(const Pose& jointConfig,
+static void ForwardImpl(const Pose& pose,
                         Eigen::Matrix3d& out_rot,
                         Eigen::Vector3d& out_trans) {
   double eerot[9];
   double eetrans[3];
 
-  ComputeFk(&jointConfig[0], eetrans, eerot);
+  ComputeFk(&pose[0], eetrans, eerot);
 
   for (size_t i = 0; i < 9; i++) {
     out_rot(i / 3, i % 3) = eerot[i];
@@ -29,10 +29,10 @@ static void ForwardImpl(const Pose& jointConfig,
   }
 }
 
-Eigen::Affine3d Forward(const Pose& jointConfig) {
+Eigen::Affine3d Forward(const Pose& pose) {
   Eigen::Matrix3d rot;
   Eigen::Vector3d trans;
-  ForwardImpl(jointConfig, rot, trans);
+  ForwardImpl(pose, rot, trans);
   Eigen::Affine3d a;
   a.setIdentity();
   a.translate(trans);
@@ -42,7 +42,7 @@ Eigen::Affine3d Forward(const Pose& jointConfig) {
 
 static bool InverseImpl(const Eigen::Matrix3d& rot,
                         const Eigen::Vector3d& trans,
-                        std::vector<Pose>& out_jointConfigs) {
+                        std::vector<Pose>& out_poses) {
   using namespace ikfast;
   IkSolutionList<IkReal> solutions;
   std::vector<IkReal> vfree(GetNumFreeParameters());
@@ -65,7 +65,7 @@ static bool InverseImpl(const Eigen::Matrix3d& rot,
 
   size_t numSolutions = solutions.GetNumSolutions();
   std::vector<IkReal> solvalues(GetNumJoints());
-  out_jointConfigs.clear();
+  out_poses.clear();
 
   for (size_t i = 0; i < numSolutions; i++) {
     const IkSolutionBase<IkReal>& sol = solutions.GetSolution(i);
@@ -76,27 +76,27 @@ static bool InverseImpl(const Eigen::Matrix3d& rot,
     for (size_t j = 0; j < kNumDOFs; j++) {
       p[j] = solvalues[j];
     }
-    out_jointConfigs.push_back(p);
+    out_poses.push_back(p);
   }
 
   return true;
 }
 
-bool Inverse(Eigen::Affine3d trans, std::vector<Pose>& out_jointConfigs) {
+bool Inverse(Eigen::Affine3d trans, std::vector<Pose>& out_poses) {
   trans = globalTransInv * trans;
-  return InverseImpl(trans.linear(), trans.translation(), out_jointConfigs);
+  return InverseImpl(trans.linear(), trans.translation(), out_poses);
 }
 
 bool BestInverse(Eigen::Affine3d trans,
                  Pose base,
-                 std::vector<Pose>& out_joint_configs,
+                 std::vector<Pose>& out_poses,
                  size_t& best_i) {
-  if (Inverse(trans, out_joint_configs)) {
+  if (Inverse(trans, out_poses)) {
     double best = std::numeric_limits<double>::max();
     double cur;
     size_t bestI = -1;
-    for (size_t j = 0; j < out_joint_configs.size(); j++) {
-      if ((cur = SumSquaredAngularDistance(base, out_joint_configs[j])) <
+    for (size_t j = 0; j < out_poses.size(); j++) {
+      if ((cur = SumSquaredAngularDistance(base, out_poses[j])) <
           best) {
         best = cur;
         bestI = j;
@@ -120,22 +120,22 @@ static Eigen::Affine3d JointTransform(double theta,
   return result;
 }
 
-void ForwardIntermediate(const Pose& jointConfig,
+void ForwardIntermediate(const Pose& pose,
                          std::vector<Eigen::Affine3d>& out_trans) {
   out_trans.resize(kNumDOFs);
   out_trans[0] =
-      JointTransform(jointConfig[0], kRobotA[0], kRobotD[0], kRobotAlpha[0]);
+      JointTransform(pose[0], kRobotA[0], kRobotD[0], kRobotAlpha[0]);
   for (size_t i = 1; i < kNumDOFs; i++) {
     out_trans[i] =
         out_trans[i - 1] *
-        JointTransform(jointConfig[i], kRobotA[i], kRobotD[i], kRobotAlpha[i]);
+        JointTransform(pose[i], kRobotA[i], kRobotD[i], kRobotAlpha[i]);
   }
   for (size_t i = 0; i < kNumDOFs; i++) {
     out_trans[i] = globalTrans * out_trans[i];
   }
 }
 
-JacobianFunc ComputeJacobian(const Pose& jointConfig) {
+JacobianFunc ComputeJacobian(const Pose& pose) {
   std::vector<Eigen::Affine3d> H(kNumDOFs + 1);
   std::vector<Eigen::Vector3d> Z(kNumDOFs);
   std::vector<Eigen::Vector3d> d(kNumDOFs);
@@ -146,7 +146,7 @@ JacobianFunc ComputeJacobian(const Pose& jointConfig) {
     d[i] = H[i].translation();
     H[i + 1] =
         H[i] *
-        JointTransform(jointConfig(i), kRobotA[i], kRobotD[i], kRobotAlpha[i]);
+        JointTransform(pose(i), kRobotA[i], kRobotD[i], kRobotAlpha[i]);
   }
 
   Eigen::Affine3d Hlast = H.back();

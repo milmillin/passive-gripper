@@ -288,7 +288,7 @@ int GetFingerDistance(const DiscreteDistanceField& distance_field,
   int max_distance = 0;
   for (auto& contact_point : contact_points) {
     max_distance =
-        std::max(max_distance, distance_field.getVoxel(contact_point.position));
+        std::max(max_distance, distance_field.GetVoxel(contact_point.position));
   }
   return max_distance;
 }

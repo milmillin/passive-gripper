@@ -768,7 +768,7 @@ void MainUI::DrawDebugPanel() {
     if (ImGui::Button("Debug CP Seeds", ImVec2(w, 0))) {
       std::vector<int> FI;
       std::vector<Eigen::Vector3d> X;
-      InitializeContactPointSeeds(vm_.PSG(), cp_num_seeds, cp_filter, FI, X);
+      InitializeContactPointSeeds(vm_.PSG(), cp_num_seeds, FI, X);
       Eigen::MatrixXd P(X.size(), 3);
       for (size_t i = 0; i < X.size(); i++) {
         P.row(i) = X[i];
@@ -779,10 +779,6 @@ void MainUI::DrawDebugPanel() {
       layer.point_size = 5;
     }
     ImGui::InputInt("# Seeds", (int*)&cp_num_seeds, 1000);
-    ImGui::InputDouble("Filter Hole", &cp_filter.hole, 0.001);
-    ImGui::InputDouble(
-        "Filter Curvature Radius", &cp_filter.curvature_radius, 0.001);
-    MyInputDoubleConvert("Filter Angle", &cp_filter.angle, kRadToDeg, 1);
     if (ImGui::Button("Dump CSV", ImVec2(w, 0))) {
       std::string filename = igl::file_dialog_save();
       if (!filename.empty()) {

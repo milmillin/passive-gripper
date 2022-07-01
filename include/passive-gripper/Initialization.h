@@ -3,7 +3,6 @@
 #include <Eigen/Core>
 #include "PassiveGripper.h"
 #include "models/ContactPoint.h"
-#include "models/ContactPointFilter.h"
 #include "models/ContactPointMetric.h"
 #include "models/GripperSettings.h"
 #include "models/MeshDependentResource.h"
@@ -69,10 +68,9 @@ void InitializeContactPointSeeds(const PassiveGripper& psg,
 /// <param name="num_seeds">Number of potential contact points to be
 /// generated</param>
 /// <returns>A ranked list of GCs and metrics</returns>
-std::vector<ContactPointMetric> InitializeGCs(
-    const PassiveGripper& psg,
-    size_t num_candidates,
-    size_t num_seeds);
+std::vector<ContactPointMetric> InitializeGCs(const PassiveGripper& psg,
+                                              size_t num_candidates,
+                                              size_t num_seeds);
 
 /// <summary>
 /// Compute the bounding box for topology optimization. The bound contains the
@@ -84,5 +82,16 @@ std::vector<ContactPointMetric> InitializeGCs(
 void InitializeGripperBound(const PassiveGripper& psg,
                             Eigen::Vector3d& out_lb,
                             Eigen::Vector3d& out_ub);
+
+/// <summary>
+/// Compute the bounding box for topology optimization. The bound contains the
+/// mesh and the FFO with some paddings.
+/// </summary>
+/// <param name="psg">Passive gripper object</param>
+/// <param name="out_lb">Lower bound of the box</param>
+/// <param name="out_ub">Upper bound of the box</param>
+void InitializeConservativeBound(const PassiveGripper& psg,
+                                 Eigen::Vector3d& out_lb,
+                                 Eigen::Vector3d& out_ub);
 
 }  // namespace psg

@@ -5,19 +5,19 @@
 namespace psg {
 
 struct TrajectorySettings : psg::serialization::Serializable {
-  size_t n_keyframes = 4;
-
   DECL_SERIALIZE() {
-    constexpr int version = 1;
+    constexpr int version = 2;
     SERIALIZE(version);
-    SERIALIZE(n_keyframes);
   }
 
   DECL_DESERIALIZE() {
     int version;
+    size_t unused_size_t;
     DESERIALIZE(version);
     if (version == 1) {
-      DESERIALIZE(n_keyframes);
+      DESERIALIZE(unused_size_t);
+    } else if (version == 2) {
+      // does nothing
     }
   }
 };

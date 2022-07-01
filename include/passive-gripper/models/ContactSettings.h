@@ -5,9 +5,9 @@
 namespace psg {
 
 struct ContactSettings : psg::serialization::Serializable {
-  double friction = 0.5;
-  size_t cone_res = 4;
-  double floor = 0.01;
+  double friction = kBaseFriction;
+  size_t cone_res = kConeRes;
+  double floor = kContactFloor;
   double max_angle = kHeuristicsThetaMax;
 
   DECL_SERIALIZE() {

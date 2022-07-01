@@ -188,9 +188,7 @@ bool ViewModel::ComputeInitParams() {
                          effector_pos,
                          psg_.GetFingerSettings().n_finger_joints);
   init_params_.trajectory =
-      InitializeTrajectory(init_params_.fingers,
-                           psg_.GetTrajectory().front(),
-                           psg_.GetTrajectorySettings().n_keyframes);
+      InitializeTrajectory(init_params_.fingers, psg_.GetTrajectory().front());
   init_params_.contact_points = psg_.GetContactPoints();
   is_init_params_valid_ = true;
 

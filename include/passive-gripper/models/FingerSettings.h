@@ -5,7 +5,7 @@
 namespace psg {
 
 struct FingerSettings : psg::serialization::Serializable {
-  size_t n_finger_joints = 4;
+  size_t n_finger_joints = kNumFingerJoints;
 
   DECL_SERIALIZE() {
     constexpr int version = 1;

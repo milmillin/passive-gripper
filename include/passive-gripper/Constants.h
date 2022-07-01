@@ -8,6 +8,7 @@
 #include <array>
 #include <map>
 #include <vector>
+#include <nlopt.h>
 
 namespace psg {
 
@@ -87,7 +88,14 @@ static constexpr double kWrenchNormThresh = 1e-5;
 // Expand mesh padding
 constexpr double kExpandMesh = 0.002; // 2mm
 
-// GC Generations
+// Finger Settings (default)
+constexpr size_t kNumFingerJoints = 4;
+
+// GC Generations (default)
+constexpr double kBaseFriction = 0.5;
+constexpr size_t kConeRes = 4;
+constexpr double kContactFloor = 0.01;     // Floor contact filter
+
 constexpr size_t kNSeeds = 1000;
 constexpr size_t kNCandidates = 3000;
 // Section 4.2 Constants
@@ -96,7 +104,52 @@ constexpr double kHeuristicsLR = 0.01;
 constexpr double kHeuristicsThreshold = 1e-12;
 constexpr int kHeuristicsMaxIter = 500;
 
-// Topy Config
+// Cost Settings (default)
+constexpr double kCostFloor = 0.0075;
+constexpr size_t kNumTrajSteps = 768;
+constexpr size_t kNumFingerSteps = 128;
+constexpr double kTrajRegularization = 1e-6;
+constexpr double kRobotCollisionContrib = 1000;
+constexpr double kGripperEnergyContrib = 1.;
+constexpr double kInnerDistContrib = 1.;
+constexpr double kDistSubdivision = 0.001;
+constexpr double kDistLinearity = 0.001;
+#ifdef PAPER
+constexpr double kTrajEnergyContrib = 1.;
+constexpr double kGeodesicContrib = 1.;
+constexpr bool kUseAdaptiveSubdivision = true;
+#else
+constexpr double kTrajEnergyContrib = 0.;
+constexpr double kGeodesicContrib = 0.;
+constexpr bool kUseAdaptiveSubdivision = false;
+#endif
+
+// Optimization Settings (default)
+constexpr double kOptMaxRuntime = 0.; // seconds
+constexpr size_t kOptMaxIters = 300000;
+constexpr double kOptFingerWiggle = 0.01;
+const Pose kOptTrajWiggle = (Pose() << 5. * kDegToRad,
+                            5. * kDegToRad,
+                            5. * kDegToRad,
+                            45. * kDegToRad,
+                            25. * kDegToRad,
+                            90. * kDegToRad)
+                               .finished();
+constexpr double kOptTolerance = 0.;
+constexpr nlopt_algorithm kOptAlgorithm = NLOPT_GN_CRS2_LM;
+constexpr size_t kOptPopulation = 30000;
+
+// Topology Optimization Settings (default)
+constexpr double kNegVolRes = 0.004;
+constexpr double kTopoRes = 0.002;
+constexpr double kVolFrac = 0.02; // percentage wrt conservative bound
+// Refinement
+constexpr double kAttachmentSize = 0.038; // diameter
+constexpr double kContactPointSize = 0.01;
+constexpr double kBaseThickness = 0.01;
+
+
+// Topy Config Helper
 const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"ETA", "0.4"},
                                                         {"DOF_PN", "3"},
@@ -190,7 +243,6 @@ const char* const kAlgorithms[] = {
     "NLOPT_GN_AGS"};
 }
 
-enum class CostFunctionEnum : int { kGradientBased = 0, kSP = 1 };
 
 namespace colors {
 const Eigen::RowVector3d kPurple = Eigen::RowVector3d(219, 76, 178) / 255;

@@ -6,7 +6,6 @@
 #include <passive-gripper/Debugger.h>
 #include <passive-gripper/Optimizer.h>
 #include <passive-gripper/models/ContactPointMetric.h>
-#include <passive-gripper/models/ContactPointFilter.h>
 
 #include "Layer.h"
 #include "ViewModel.h"
@@ -91,12 +90,10 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   void OnGripperBoundInvalidated();
   void OnNegVolInvalidated();
   void OnGripperInvalidated();
-  void OnGradientInvalidated();
   void OnContactFloorInvalidated();
 
   // Debug
   void VisualizeDebugger(const Debugger& debugger);
-  ContactPointFilter cp_filter;
 
   // Robot Viz
   bool robot_viz_ = false;

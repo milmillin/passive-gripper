@@ -400,4 +400,29 @@ void InitializeGripperBound(const PassiveGripper& psg,
   out_lb.z() = 0;
 }
 
+void InitializeConservativeBound(const PassiveGripper& psg,
+                                 Eigen::Vector3d& out_lb,
+                                 Eigen::Vector3d& out_ub) {
+  out_lb.setZero();
+  out_ub.setZero();
+
+  double attachment_r = psg.GetTopoOptSettings().attachment_size / 2.;
+  out_lb.x() = out_lb.y() = -attachment_r;
+  out_ub.x() = out_ub.y() = attachment_r;
+
+  Eigen::Affine3d finger_trans_inv = psg.GetFingerTransInv();
+
+  auto V = (psg.GetFingerTransInv() *
+            psg.GetMDR().V.transpose().colwise().homogeneous())
+               .transpose();
+
+  out_lb = out_lb.cwiseMin(V.colwise().minCoeff().transpose());
+  out_ub = out_ub.cwiseMax(V.colwise().maxCoeff().transpose());
+
+  constexpr double padding = 0.03;
+  out_lb.array() -= padding;
+  out_ub.array() += padding;
+  out_lb.z() = 0;
+}
+
 }  // namespace psg

@@ -5,15 +5,14 @@
 namespace psg {
 
 struct TopoOptSettings : psg::serialization::Serializable {
-  Eigen::Vector3d lower_bound = Eigen::Vector3d(-0.2, -0.05, 0.5);
-  Eigen::Vector3d upper_bound = Eigen::Vector3d(0.05, 0.2, 0.8);
-  double neg_vol_res = 0.004;
-  double topo_res = 0.002;
-  double attachment_size = 0.038; // diameter
-  double vol_frac = 0.02; // percentage wrt pi bound
-
-  double contact_point_size = 0.01;
-  double base_thickness = 0.01;
+  Eigen::Vector3d lower_bound = Eigen::Vector3d(-0.2, -0.05, 0.5); // dummy
+  Eigen::Vector3d upper_bound = Eigen::Vector3d(0.05, 0.2, 0.8); // dummy
+  double neg_vol_res = kNegVolRes;
+  double topo_res = kTopoRes;
+  double attachment_size = kAttachmentSize;
+  double vol_frac = kVolFrac;
+  double contact_point_size = kContactPointSize;
+  double base_thickness = kBaseThickness;
 
   DECL_SERIALIZE() {
     constexpr int version = 2;

@@ -8,19 +8,13 @@
 namespace psg {
 
 struct OptSettings : psg::serialization::Serializable {
-  double max_runtime = 0;  // seconds
-  size_t max_iters = 300000;
-  double finger_wiggle = 0.01;
-  Pose trajectory_wiggle = (Pose() << 5. * kDegToRad,
-                            5. * kDegToRad,
-                            5. * kDegToRad,
-                            45. * kDegToRad,
-                            25. * kDegToRad,
-                            90. * kDegToRad)
-                               .finished();
-  double tolerance = 0;
-  nlopt_algorithm algorithm = NLOPT_GN_CRS2_LM;
-  size_t population = 30000;
+  double max_runtime = kOptMaxRuntime;
+  size_t max_iters = kOptMaxIters;
+  double finger_wiggle = kOptFingerWiggle;
+  Pose trajectory_wiggle = kOptTrajWiggle;
+  double tolerance = kOptTolerance;
+  nlopt_algorithm algorithm = kOptAlgorithm;
+  size_t population = kOptPopulation;
 
   DECL_SERIALIZE() {
     constexpr int version = 3;

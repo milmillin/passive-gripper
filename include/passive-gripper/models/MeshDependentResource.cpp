@@ -41,7 +41,6 @@ void MeshDependentResource::init(const Eigen::MatrixXd& V_,
 }
 
 void MeshDependentResource::init(const MeshDependentResource& other) {
-
   init(other.V, other.F);
   if (other.SP_valid_) {
     SP_valid_ = other.SP_valid_;
@@ -57,7 +56,6 @@ void MeshDependentResource::init(const MeshDependentResource& other) {
 }
 
 void MeshDependentResource::init_sp() const {
-
   if (SP_valid_) return;
   std::lock_guard<std::mutex> lock(SP_mutex_);
   if (SP_valid_) return;

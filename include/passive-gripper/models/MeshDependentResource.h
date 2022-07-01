@@ -26,10 +26,6 @@ class MeshDependentResource : psg::serialization::Serializable {
   igl::AABB<Eigen::MatrixXd, 3> tree;
   igl::embree::EmbreeIntersector intersector;
 
-  // curvature
-  Eigen::MatrixXd PD1, PD2;
-  Eigen::VectorXd PV1, PV2;
-
  private:
   // All-pair shortest path
   // A proxy for geodesic distance
@@ -39,32 +35,55 @@ class MeshDependentResource : psg::serialization::Serializable {
   mutable std::mutex SP_mutex_;
   void init_sp() const;
 
-  // Curvature
-  /*
-  mutable bool curvature_valid_ = false;
-  mutable Eigen::VectorXd curvature_;
-  mutable std::mutex curvature_mutex_;
-  void init_curvature() const;
-  */
-
   bool initialized = false;
 
  public:
+  /// <summary>
+  /// Initialize MeshDependentResource
+  /// </summary>
+  /// <param name="V">Mesh vertices</param>
+  /// <param name="F">Mesh faces</param>
   void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F);
+
+  /// <summary>
+  /// Initialize MeshDependentResource from another MeshDependentResource
+  /// </summary>
+  /// <param name="other">Another MeshDependentResource</param>
   void init(const MeshDependentResource& other);
 
-  // out_c: closest point
-  // out_s: sign
+  /// <summary>
+  /// Compute the signed distance from a given point.
+  /// </summary>
+  /// <param name="position">Point</param>
+  /// <param name="out_c">Closest point on the mesh</param>
+  /// <param name="out_s">-1 or 1</param>
+  /// <returns>The signed distance</returns>
   double ComputeSignedDistance(const Eigen::Vector3d& position,
                                Eigen::RowVector3d& out_c,
                                double& out_s) const;
 
+  /// <summary>
+  /// Compute the closest point on the mesh from a given point.
+  /// </summary>
+  /// <param name="position">Point</param>
+  /// <param name="out_c">Closest point on the mesh</param>
+  /// <param name="out_fid">Face index of the cloest point</param>
   void ComputeClosestPoint(const Eigen::Vector3d& position,
                            Eigen::RowVector3d& out_c,
                            int& out_fid) const;
 
+  /// <summary>
+  /// Compute the closest face on the mesh from a given point
+  /// </summary>
+  /// <param name="position">Point</param>
+  /// <returns>Index of the face on which the cloest point lies</returns>
   size_t ComputeClosestFacet(const Eigen::Vector3d& position) const;
 
+  /// <summary>
+  /// Compute the closest vertex on the mesh from a given point
+  /// </summary>
+  /// <param name="position">Point</param>
+  /// <returns>Index of the closest vertex</returns>
   size_t ComputeClosestVertex(const Eigen::Vector3d& position) const;
 
   // Returns the length of non-intersecting path from A to B
@@ -73,12 +92,16 @@ class MeshDependentResource : psg::serialization::Serializable {
                                  const Eigen::Vector3d& B,
                                  Debugger* const debugger) const;
 
+  /// <summary>
+  /// Determine whether the mesh intersects a given bounding box.
+  /// </summary>
+  /// <param name="box">Bounding box</param>
+  /// <returns>Whether the mesh intersects the bounding box</returns>
   bool Intersects(const Eigen::AlignedBox3d box) const;
 
   // Getters
   const Eigen::MatrixXd& GetSP() const;
   const Eigen::MatrixXi& GetSPPar() const;
-  // const Eigen::VectorXd& GetCurvature() const;
 
   DECL_SERIALIZE() {
     constexpr int version = 1;

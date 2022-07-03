@@ -271,8 +271,6 @@ double ComputeCost_SP(const GripperParams& params,
   std::vector<Eigen::MatrixXd> fingers =
       TransformFingers(params.fingers, finger_trans_inv);
 
-  // std::cout << params.fingers[0] << std::endl;
-
   // Cost between two points
   const double floor = settings.cost.floor;
   const double inner_dis_contrib = settings.cost.inner_dis_contrib;
@@ -352,14 +350,15 @@ double ComputeCost_SP(const GripperParams& params,
 
       max_deviation = sqrt(max_deviation);
 
-      // if (intersects)
       total_dev += max_deviation;
       traj_devs[i] = max_deviation;
-      // traj_skip[i] = !intersects;
     }
-    double d_sub = total_dev / settings.cost.n_finger_steps;
     std::vector<Pose> poses;
-    poses.reserve(settings.cost.n_finger_steps + 32);
+
+    double d_sub = (settings.cost.use_adaptive_subdivision)
+                       ? settings.cost.d_subdivision
+                       : total_dev / settings.cost.n_finger_steps;
+    poses.reserve(total_dev / d_sub + 32);
     for (long long i = 0; i < n_trajectory - 1; i++) {
       size_t cur_sub = std::ceil(traj_devs[i] / d_sub);
       size_t iters = cur_sub;
@@ -401,7 +400,9 @@ double ComputeCost_SP(const GripperParams& params,
         total_norm += norm;
       }
       double d_sub =
-          total_norm * fingers.size() / settings.cost.n_trajectory_steps;
+          settings.cost.use_adaptive_subdivision
+              ? settings.cost.d_subdivision
+              : total_norm * fingers.size() / settings.cost.n_trajectory_steps;
       for (size_t j = 1; j < fingers[i].rows(); j++) {
         double norm = (fingers[i].row(j) - fingers[i].row(j - 1)).norm();
         size_t subs = std::ceil(norm / d_sub);

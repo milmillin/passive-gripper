@@ -168,4 +168,22 @@ After topology optimization, a `.bin` file should be generated. Staying on the "
 This should load the gripper mesh. Then click on "Refine Result" to add the mounting disk and refine the geometry around the contact points.
 You can select "Save Gripper STL" to export the gripper shape.
 
+### Saving and Loading Configurations
 
+You can save all the settings and parameters using the "Save PSG" button.
+This will prompt you to save a `.psg` file which contains the mesh, the contact points, the skeleton, the trajectory, and all the settings.
+You can hit "Load PSG" to load the saved configurations.
+
+### View Options
+
+You can hide and unhide some components on the viewport by expanding the "View" panel.
+
+![view panel](docs/images/view-options.png)
+
+Here the four checkboxes are:
+- Visibility
+- Line Visibility
+- Face Visibility
+- Face-based shading
+
+You can also check "Robot Viz" to show UR5 model but this will affect the viewing performance.

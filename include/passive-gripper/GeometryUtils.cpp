@@ -4,6 +4,9 @@
 #include <unordered_set>
 #include <limits>
 
+// global_functions_3.h will fix the error of not finding CGAL::midpoint.
+// It seems to be an upstream bug that this file is not included automatically.
+#include <CGAL/Kernel/global_functions_3.h>
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <CGAL/Polyhedron_3.h>
 #include <igl/copyleft/cgal/mesh_boolean.h>

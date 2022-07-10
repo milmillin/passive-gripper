@@ -50,7 +50,10 @@ void ProcessFrom(std::string raw_fn,
   psg.Deserialize(psg_file);
   Log() << "> Loaded " << psg_fn << std::endl;
 
+  // Override settings passed by caller
+  stgo.Apply(psg);
   try {
+    // Override settings stored in the same folder as the model
     psg::SettingsOverrider stgo;
     std::string stgo_fn = raw_fn + ".stgo";
     stgo.Load(stgo_fn);

@@ -184,7 +184,10 @@ int main(int argc, char** argv) {
     }
 
     psg::SettingsOverrider stgo;
-    if (stgo_set) stgo.Load(stgo_fn);
+    if (stgo_set) {
+      stgo.Load(stgo_fn);
+      Log() << "> Loaded " << stgo_fn << std::endl;
+    }
     ProcessFrom(raw_fn, out_dir, ckpt_i, ckpt_need, maxiters, stgo, cb);
   } catch (const std::exception& e) {
     Error() << e.what() << std::endl;

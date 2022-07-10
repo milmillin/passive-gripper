@@ -93,35 +93,6 @@ void MeshDependentResource::init_sp() const {
   SP_valid_ = true;
 }
 
-/*
-void MeshDependentResource::init_curvature() const {
-  if (curvature_valid_) return;  // reduce lock overhead?
-  std::lock_guard<std::mutex> lock(curvature_mutex_);
-  if (curvature_valid_) return;
-
-  //
-https://github.com/libigl/libigl/blob/main/tutorial/202_GaussianCurvature/main.cpp
-  /*
-  Eigen::VectorXd K;
-  // Compute integral of Gaussian curvature
-  igl::gaussian_curvature(V, F, K);
-  // Compute mass matrix
-  Eigen::SparseMatrix<double> M, Minv;
-  igl::massmatrix(V, F, igl::MASSMATRIX_TYPE_DEFAULT, M);
-  igl::invert_diag(M, Minv);
-  // Divide by area to get integral average
-  K = (Minv * K).eval();
-  curvature_ = K;
-
-
-  Eigen::MatrixXd PD1, PD2;
-  Eigen::VectorXd PV1, PV2;
-  igl::principal_curvature(V, F, PD1, PD2, PV1, PV2);
-
-  curvature_valid_ = true;
-}
-*/
-
 double MeshDependentResource::ComputeSignedDistance(
     const Eigen::Vector3d& position,
     Eigen::RowVector3d& c,
@@ -135,11 +106,13 @@ double MeshDependentResource::ComputeSignedDistance(
       tree, V, F, FN, VN, EN, EMAP, position.transpose(), s, sqrd, i, c, n);
   return s * sqrt(sqrd);
 }
+
 void MeshDependentResource::ComputeClosestPoint(const Eigen::Vector3d& position,
                                                 Eigen::RowVector3d& out_c,
                                                 int& out_fid) const {
   tree.squared_distance(V, F, position.transpose(), out_fid, out_c);
 }
+
 size_t MeshDependentResource::ComputeClosestFacet(
     const Eigen::Vector3d& position) const {
   Eigen::RowVector3d c;
@@ -147,6 +120,7 @@ size_t MeshDependentResource::ComputeClosestFacet(
   tree.squared_distance(V, F, position.transpose(), fid, c);
   return fid;
 }
+
 size_t MeshDependentResource::ComputeClosestVertex(
     const Eigen::Vector3d& position) const {
   Eigen::RowVector3d c;
@@ -260,12 +234,5 @@ const Eigen::MatrixXi& MeshDependentResource::GetSPPar() const {
   init_sp();
   return SP_par_;
 }
-
-/*
-const Eigen::VectorXd& MeshDependentResource::GetCurvature() const {
-  init_curvature();
-  return curvature_;
-}
-*/
 
 }  // namespace psg

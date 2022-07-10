@@ -234,7 +234,7 @@ static real LossFn(const std::vector<Vector3real>& positions,
 bool CheckApproachDirection(const std::vector<ContactPoint>& contact_points,
                             Eigen::Affine3d& out_trans,
                             double max_angle,
-                            double lr,
+                            double step_size,
                             double threshold,
                             int max_iterations) {
   using autodiff::at;
@@ -262,7 +262,7 @@ bool CheckApproachDirection(const std::vector<ContactPoint>& contact_points,
                  wrt(trans, rot, center),
                  at(positions, normals, trans, rot, center, maxCos),
                  loss);
-    grad *= lr;
+    grad *= step_size;
 
     if (loss < threshold) {
       Eigen::Vector3d rotd = rot.cast<double>();

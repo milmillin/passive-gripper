@@ -19,7 +19,8 @@ constexpr double kHalfPi = kPi / 2.;
 const double kDegToRad = kPi / 180.;
 const double kRadToDeg = 180. / kPi;
 
-// UR5 Constants
+// DH Parameters for UR5
+// Adapted from https://www.universal-robots.com/articles/ur/application-installation/dh-parameters-for-calculations-of-kinematics-and-dynamics/
 constexpr size_t kNumDOFs = 6;
 const double kRobotA[] = {0, -0.425, -0.39225, 0, 0, 0};
 const double kRobotD[] = {0.089159, 0, 0, 0.10915, 0.09465, 0.0823};
@@ -149,7 +150,8 @@ constexpr double kContactPointSize = 0.01;
 constexpr double kBaseThickness = 0.01;
 
 
-// Topy Config Helper
+// Default configurations for Topy
+// Adapted from https://github.com/williamhunter/topy/blob/e1c0efad5cef802b45f5a0abc914cde1eb8abfe9/examples/arm/arm_3d_H8_etaopt_gsf.tpd
 const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"ETA", "0.4"},
                                                         {"DOF_PN", "3"},

@@ -13,6 +13,13 @@ class DiscreteDistanceField {
   Eigen::Vector3d upper_bound;
   double resolution;
 
+  /// <summary>
+  /// Discretize the mesh and calculate the distance from base to all points.
+  /// </summary>
+  /// <param name="V">The mesh's vertex list</param>
+  /// <param name="F">The mesh's face list</param>
+  /// <param name="units">Side length of each grid cell</param>
+  /// <param name="base">Coordinate of the base</param>
   DiscreteDistanceField(const Eigen::MatrixXd& V,
                         const Eigen::MatrixXi& F,
                         int units,
@@ -30,6 +37,12 @@ class DiscreteDistanceField {
   }
 
  public:
+  /// <summary>
+  /// Find the distance to the base.
+  /// </summary>
+  /// <param name="coord">Target location</param>
+  /// <returns>The distance to the base, from the closest valid voxel in the
+  /// target location</returns>
   int GetVoxel(Eigen::Vector3d coord) const {
     coord = (coord - lower_bound) / resolution;
     Eigen::Vector3i coordi = coord.cast<int>();

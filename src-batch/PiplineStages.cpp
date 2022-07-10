@@ -28,7 +28,7 @@ void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn) {
   Eigen::VectorXd SVJ;
   igl::remove_duplicate_vertices(V, 0, SV, SVI, SVJ);
   Eigen::MatrixXi SF = F;
-  for (size_t i = 0; i < SF.size(); i++) {
+  for (Eigen::Index i = 0; i < SF.size(); i++) {
     SF(i) = SVJ(SF(i));
   }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <passive-gripper/Constants.h>
 #include <passive-gripper/PassiveGripper.h>
 
@@ -26,7 +28,7 @@ class ViewModel {
   void SetCurrentPose(const Eigen::Affine3d& trans);
   void SetCurrentPose(const Eigen::Vector3d& pos, const Eigen::Vector3d& ang);
   void TogglePose();
-  inline bool CanTogglePose() const { return ik_sols_index_ != -1; }
+  inline bool CanTogglePose() const { return ik_sols_index_ != SIZE_MAX; }
 
   void AnimateTo(const Pose& pose);
   void NextFrame();

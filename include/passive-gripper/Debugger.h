@@ -26,19 +26,19 @@ class Debugger {
 
  private:
   Eigen::MatrixXd P_;
-  size_t n_P_;
+  Eigen::Index n_P_;
   Eigen::MatrixXi E_;
-  size_t n_E_;
+  Eigen::Index n_E_;
   Eigen::MatrixXd C_;
-  size_t n_C_;
+  Eigen::Index n_C_;
   Eigen::MatrixXd V_;
-  size_t n_V_;
+  Eigen::Index n_V_;
   Eigen::MatrixXi F_;
-  size_t n_F_;
+  Eigen::Index n_F_;
   Eigen::MatrixXd PP_;
-  size_t n_PP_;
+  Eigen::Index n_PP_;
   Eigen::MatrixXd PC_;
-  size_t n_PC_;
+  Eigen::Index n_PC_;
   mutable std::mutex mtx_;
 };
 

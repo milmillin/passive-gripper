@@ -51,7 +51,8 @@ class DiscreteDistanceField {
         for (int dy = -i; dy <= i; dy++)
           for (int dz = -i; dz <= i; dz++) {
             Eigen::Vector3i coord_next = coordi + Eigen::Vector3i(dx, dy, dz);
-            if (GetVoxelI(coord_next) != -1) return GetVoxelI(coord_next);
+            if (GetVoxelI(coord_next) != -1)
+              return GetVoxelI(coord_next);
           }
   }
 };

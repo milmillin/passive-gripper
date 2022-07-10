@@ -96,7 +96,6 @@ void ProcessFrom(std::string raw_fn,
     std::string out_fn = output_dir + '/' + out_raw_fn;
 
     double traj_complexity = 0;
-    double pi_volume = -1.;
     double volume = -1.;
     Eigen::MatrixXd neg_V;
     Eigen::MatrixXi neg_F;
@@ -145,7 +144,7 @@ void ProcessFrom(std::string raw_fn,
       } else {
         const psg::Trajectory& traj = psg.GetTrajectory();
         for (int i = traj.size() - 1; i >= 0; i--) {
-          for (int j = 0; j < psg::kNumDOFs; j++) {
+          for (size_t j = 0; j < psg::kNumDOFs; j++) {
             traj_csv_file << std::setprecision(15) << traj[i](j) << ",";
           }
           traj_csv_file << std::endl;

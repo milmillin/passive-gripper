@@ -89,8 +89,8 @@ static CGAL::Quotient<ET> WrenchInPositiveSpan(
   }
   */
 
-  for (size_t i = 0; i < D.cols(); i++) {
-    for (size_t j = 0; j <= i; j++) {
+  for (Eigen::Index i = 0; i < D.cols(); i++) {
+    for (Eigen::Index j = 0; j <= i; j++) {
       qp.set_d(i, j, D(i, j));
     }
     qp.set_c(i, c(i));

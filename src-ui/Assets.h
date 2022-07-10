@@ -24,7 +24,7 @@ const std::vector<std::pair<Eigen::MatrixXd, Eigen::MatrixXi>> kAssets = ([]() {
   auto path = boost::dll::program_location().parent_path() / "assets";
 
   Eigen::MatrixXd N;
-  for (int i = 0; i < kAssetSize; i++) {
+  for (size_t i = 0; i < kAssetSize; i++) {
     auto fn = path / kAssetNames[i];
     std::ifstream f(fn.string(), std::ios::in | std::ios::binary);
     if (!f.is_open()) {

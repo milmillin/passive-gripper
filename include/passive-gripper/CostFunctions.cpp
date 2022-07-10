@@ -46,10 +46,9 @@ double MinDistance(const GripperParams& params,
   // discretize fingers
   std::vector<Eigen::Vector3d> d_fingers;
   for (size_t i = 0; i < fingers.size(); i++) {
-    for (size_t j = 1; j < fingers[i].rows(); j++) {
+    for (Eigen::Index j = 1; j < fingers[i].rows(); j++) {
       double norm = (fingers[i].row(j) - fingers[i].row(j - 1)).norm();
       size_t subs = std::ceil(norm / precision);
-      size_t iters = subs;
       for (size_t k = (j == 1) ? 0 : 1; k <= subs; k++) {
         double t = (double)k / subs;
         d_fingers.push_back(fingers[i].row(j - 1) * (1. - t) +
@@ -59,7 +58,7 @@ double MinDistance(const GripperParams& params,
   }
   Eigen::MatrixXd D_fingers(d_fingers.size(), 3);
 #pragma omp parallel for
-  for (long long i = 0; i < d_fingers.size(); i++) {
+  for (size_t i = 0; i < d_fingers.size(); i++) {
     D_fingers.row(i) = d_fingers[i];
   }
 
@@ -244,7 +243,7 @@ double ComputeFloorCost(Eigen::RowVector3d p0,
                         double floor) {
   if (p0.y() >= floor && p1.y() >= floor) return 0;
   Eigen::RowVector3d p01 = p1 - p0;
-  if (p0.y() < floor != p1.y() < floor) {
+  if ((p0.y() < floor) != (p1.y() < floor)) {
     if (p1.y() < floor) std::swap(p0, p1);
     p01 *= (floor - p0.y()) / (p1.y() - p0.y());
   }
@@ -298,7 +297,7 @@ double ComputeCost_SP(const GripperParams& params,
     _SegState state;
     for (size_t i = 0; i < fingers.size(); i++) {
       state.is_first = true;
-      for (size_t j = 0; j < fingers[i].rows() - 1; j++) {
+      for (Eigen::Index j = 0; j < fingers[i].rows() - 1; j++) {
         cost += MyCost(fingers[i].row(j),
                        fingers[i].row(j + 1),
                        state,
@@ -316,12 +315,12 @@ double ComputeCost_SP(const GripperParams& params,
                               settings.cost.d_linearity,
                               new_trajectory,
                               traj_contrib);
-  size_t n_trajectory = new_trajectory.size();
+  long long n_trajectory = new_trajectory.size();
   std::vector<Fingers> new_fingers(n_trajectory);
   std::vector<Eigen::Affine3d> new_trans(n_trajectory);
 
 #pragma omp parallel for
-  for (long long i = 0; i < new_trajectory.size(); i++) {
+  for (size_t i = 0; i < new_trajectory.size(); i++) {
     new_trans[i] = robots::Forward(new_trajectory[i]);
     new_fingers[i] = TransformFingers(fingers, new_trans[i]);
   }
@@ -363,7 +362,7 @@ double ComputeCost_SP(const GripperParams& params,
       size_t cur_sub = std::ceil(traj_devs[i] / d_sub);
       size_t iters = cur_sub;
       if (i == n_trajectory - 2) iters++;
-      for (long long j = 0; j < iters; j++) {
+      for (size_t j = 0; j < iters; j++) {
         double t = (double)j / cur_sub;
         Pose pose = new_trajectory[i] * (1. - t) + new_trajectory[i + 1] * t;
         poses.push_back(pose);
@@ -395,7 +394,7 @@ double ComputeCost_SP(const GripperParams& params,
     size_t traj_subs = 0;
     for (size_t i = 0; i < fingers.size(); i++) {
       double total_norm = 0;
-      for (size_t j = 1; j < fingers[i].rows(); j++) {
+      for (Eigen::Index j = 1; j < fingers[i].rows(); j++) {
         double norm = (fingers[i].row(j) - fingers[i].row(j - 1)).norm();
         total_norm += norm;
       }
@@ -403,11 +402,10 @@ double ComputeCost_SP(const GripperParams& params,
           settings.cost.use_adaptive_subdivision
               ? settings.cost.d_subdivision
               : total_norm * fingers.size() / settings.cost.n_trajectory_steps;
-      for (size_t j = 1; j < fingers[i].rows(); j++) {
+      for (Eigen::Index j = 1; j < fingers[i].rows(); j++) {
         double norm = (fingers[i].row(j) - fingers[i].row(j - 1)).norm();
         size_t subs = std::ceil(norm / d_sub);
         traj_subs += subs;
-        size_t iters = subs;
         for (size_t k = (j == 1) ? 0 : 1; k <= subs; k++) {
           double t = (double)k / subs;
           d_fingers.push_back(fingers[i].row(j - 1) * (1. - t) +
@@ -422,7 +420,7 @@ double ComputeCost_SP(const GripperParams& params,
       _SegState state;
 
 #pragma omp for nowait
-      for (long long j = 0; j < d_fingers.size(); j++) {
+      for (size_t j = 0; j < d_fingers.size(); j++) {
         Eigen::Vector3d p0 = new_trans[0] * d_fingers[j];
         state.is_first = true;
         double cur_cost = 0;

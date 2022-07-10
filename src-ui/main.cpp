@@ -3,7 +3,7 @@
 
 #include "MainUI.h"
 
-int main(int argv, char** argc) {
+int main() {
   psg::ui::MainUI ui;
   igl::opengl::glfw::Viewer viewer;
   viewer.plugins.push_back(&ui);

@@ -41,10 +41,10 @@ void MainUI::OnLayerInvalidated(Layer layer) {
     case Layer::kGripper:
       OnGripperInvalidated();
       break;
-    case Layer::kGradient:
-      break;
     case Layer::kContactFloor:
       OnContactFloorInvalidated();
+      break;
+    default:
       break;
   }
 }
@@ -296,7 +296,6 @@ void MainUI::OnSweptSurfaceInvalidated() {
   static constexpr double fingerStep = 1. / nFingerSteps;
 
   const size_t nKeyframes = trajectory.size();
-  const size_t nDOF = trajectory.front().size();
   const size_t nFingerJoints = fingers.front().rows();
 
   const size_t nFrames = (nKeyframes - 1) * nTrajectorySteps + 1;
@@ -332,7 +331,7 @@ void MainUI::OnSweptSurfaceInvalidated() {
   }
   for (size_t iKf = 1; iKf < nKeyframes; iKf++) {
     Pose t_lerpedKeyframe;
-    for (long long j = 1; j <= nTrajectorySteps; j++) {
+    for (size_t j = 1; j <= nTrajectorySteps; j++) {
       double trajectoryT = j * trajectoryStep;
       for (size_t k = 0; k < kNumDOFs; k++) {
         t_lerpedKeyframe[k] = trajectory[iKf - 1][k] * (1 - trajectoryT) +

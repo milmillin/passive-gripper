@@ -36,7 +36,7 @@ inline std::ostream& operator<<(std::ostream& f, const Result& r) {
 
 struct ResultHeader {};
 
-inline std::ostream& operator<<(std::ostream& f, const ResultHeader& r) {
+inline std::ostream& operator<<(std::ostream& f, const ResultHeader&) {
   f << "name\tidx\tsuccess\tfc\tpfc\tmw\tpmw\tcost\tdist\tintersecting\tvol\tpi"
        "_vol\ttime";
   return f;

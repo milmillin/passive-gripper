@@ -1,5 +1,6 @@
 #include "MainUI.h"
 
+#include <cstdint>
 #include <iostream>
 
 #include <passive-gripper/GeometryUtils.h>
@@ -218,7 +219,7 @@ void MainUI::DrawCostDebugPanel() {
     ImGui::LabelText("Num Iters: ", "%d", (int)cost_dbg_infos_.size());
     if (ImGui::InputInt("Iter: ", &selected_iter_)) {
       if (selected_iter_ < 0) selected_iter_ = 0;
-      if (selected_iter_ > cost_dbg_infos_.size())
+      if ((size_t) selected_iter_ > cost_dbg_infos_.size())
         selected_iter_ = cost_dbg_infos_.size() - 1;
 
       if (selected_iter_ >= 0) {
@@ -227,11 +228,11 @@ void MainUI::DrawCostDebugPanel() {
         vm_.PSG().SetParams(param);
 
         Debugger debugger;
-        double cost = ComputeCost_SP(param,
-                                     param,
-                                     vm_.PSG().GetSettings(),
-                                     vm_.PSG().GetRemeshedMDR(),
-                                     CostContext{&debugger, -1});
+        ComputeCost_SP(param,
+                       param,
+                       vm_.PSG().GetSettings(),
+                       vm_.PSG().GetRemeshedMDR(),
+                       CostContext{&debugger, -1});
         VisualizeDebugger(debugger);
       }
     }
@@ -335,15 +336,15 @@ void MainUI::DrawContactPointPanel() {
   }
   if (ImGui::CollapsingHeader("Contact Points",
                               ImGuiTreeNodeFlags_DefaultOpen)) {
-    size_t to_delete = -1;
+    size_t to_delete = SIZE_MAX;
     const auto& contact_points = vm_.PSG().GetContactPoints();
     for (size_t i = 0; i < contact_points.size(); i++) {
-      snprintf(buf_, sizeof(buf_), "Delete C%llu", i);
+      snprintf(buf_, sizeof(buf_), "Delete C%llu", (long long unsigned) i);
       if (ImGui::Button(buf_, ImVec2(w, 0))) {
         to_delete = i;
       }
     }
-    if (to_delete != -1) {
+    if (to_delete != SIZE_MAX) {
       vm_.PSG().RemoveContactPoint(to_delete);
     }
     ImGui::Separator();
@@ -417,7 +418,7 @@ void MainUI::DrawRobotPanel() {
   }
   if (ImGui::CollapsingHeader("Keyframes", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::PushID("Keyframes");
-    size_t to_delete = -1;
+    size_t to_delete = SIZE_MAX;
     const auto& trajectory = vm_.PSG().GetTrajectory();
     for (size_t i = 0; i < trajectory.size(); i++) {
       ImGui::PushID(std::to_string(i).c_str());
@@ -443,13 +444,13 @@ void MainUI::DrawRobotPanel() {
 
       ImGui::PopID();  // i
     }
-    if (to_delete != -1) {
+    if (to_delete != SIZE_MAX) {
       vm_.PSG().RemoveKeyframe(to_delete);
     }
     if (ImGui::Button(">>")) {
-      selected_keyframe_index_ = -1;
+      selected_keyframe_index_ = SIZE_MAX;
     }
-    if (selected_keyframe_index_ == -1) {
+    if (selected_keyframe_index_ == SIZE_MAX) {
       ImGui::SameLine();
       if (ImGui::Button(">> New Keyframe")) {
         vm_.PSG().reinit_trajectory = false;
@@ -654,7 +655,7 @@ void MainUI::DrawGuizmoOptionPanel() {
 
 void MainUI::DrawOptimizationStatusPanel() {
   float w = ImGui::GetContentRegionAvailWidth();
-  float p = ImGui::GetStyle().FramePadding.x;
+  // float p = ImGui::GetStyle().FramePadding.x;
 
   ImGui::PushID("OptProg");
   if (ImGui::CollapsingHeader("Optimization Progress",
@@ -691,7 +692,7 @@ void MainUI::DrawOptimizationStatusPanel() {
 
 void MainUI::DrawDebugPanel() {
   float w = ImGui::GetContentRegionAvailWidth();
-  float p = ImGui::GetStyle().FramePadding.x;
+  // float p = ImGui::GetStyle().FramePadding.x;
 
   ImGui::PushID("Debug");
   if (ImGui::CollapsingHeader("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -777,7 +778,7 @@ void MainUI::DrawDebugPanel() {
         std::ofstream traj_csv_file(filename);
         const psg::Trajectory& traj = vm_.PSG().GetTrajectory();
         for (int i = traj.size() - 1; i >= 0; i--) {
-          for (int j = 0; j < psg::kNumDOFs; j++) {
+          for (size_t j = 0; j < psg::kNumDOFs; j++) {
             traj_csv_file << std::setprecision(15) << traj[i](j) << ",";
           }
           traj_csv_file << std::endl;
@@ -844,7 +845,7 @@ Eigen::Affine3d MainUI::GetGuizmoTransform() const {
   if (selected_tools_ == Tools::kMeshPosition) {
     return vm_.PSG().GetMeshTrans();
   } else if (selected_tools_ == Tools::kRobot) {
-    if (selected_keyframe_index_ == -1) {
+    if (selected_keyframe_index_ == SIZE_MAX) {
       return robots::Forward(vm_.GetCurrentPose());
     } else {
       return robots::Forward(
@@ -859,7 +860,7 @@ void MainUI::SetGuizmoTransform(const Eigen::Affine3d& trans) {
     vm_.PSG().TransformMesh(trans * vm_.PSG().GetMeshTrans().inverse());
   } else {
     vm_.SetCurrentPose(trans);
-    if (selected_keyframe_index_ != -1) {
+    if (selected_keyframe_index_ != SIZE_MAX) {
       vm_.PSG().reinit_trajectory = false;
       vm_.PSG().EditKeyframe(selected_keyframe_index_, vm_.GetCurrentPose());
     }

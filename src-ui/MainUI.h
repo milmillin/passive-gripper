@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoPlugin.h>
 
@@ -104,7 +106,7 @@ class MainUI : public igl::opengl::glfw::imgui::ImGuiMenu {
   std::vector<ContactPointMetric> contact_point_candidates_;
 
   // Keyframe
-  size_t selected_keyframe_index_ = -1;
+  size_t selected_keyframe_index_ = SIZE_MAX;
 
   // Transform
   Eigen::Vector3d mesh_translate_ = Eigen::Vector3d::Zero();

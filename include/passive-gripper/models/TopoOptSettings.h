@@ -45,7 +45,7 @@ struct TopoOptSettings : psg::serialization::Serializable {
       DESERIALIZE(neg_vol_res);
       DESERIALIZE(topo_res);
       DESERIALIZE(attachment_size);
-      DESERIALIZE(__unused); // int
+      DESERIALIZE(__unused);  // int
       DESERIALIZE(contact_point_size);
       DESERIALIZE(base_thickness);
     } else if (version == 2) {

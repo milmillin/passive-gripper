@@ -8,8 +8,8 @@ namespace psg {
 
 struct ContactPoint : psg::serialization::Serializable {
   Eigen::Vector3d position;  // Position of contact
-  Eigen::Vector3d normal;  // Normal direction pointing out of mesh
-  int fid;  // Face ID on the object's mesh that makes contact
+  Eigen::Vector3d normal;    // Normal direction pointing out of mesh
+  int fid;                   // Face ID on the object's mesh that makes contact
 
   DECL_SERIALIZE() {
     constexpr int version = 1;

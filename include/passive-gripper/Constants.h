@@ -1,14 +1,16 @@
 #pragma once
 
-#define DECLARE_GETTER(x, y) \
-  inline constexpr const decltype(y)& x() const { return y; }
+#define DECLARE_GETTER(x, y)                      \
+  inline constexpr const decltype(y)& x() const { \
+    return y;                                     \
+  }
 
+#include <nlopt.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <array>
 #include <map>
 #include <vector>
-#include <nlopt.h>
 
 namespace psg {
 
@@ -19,8 +21,9 @@ constexpr double kHalfPi = kPi / 2.;
 const double kDegToRad = kPi / 180.;
 const double kRadToDeg = 180. / kPi;
 
-// DH Parameters for UR5
-// Adapted from https://www.universal-robots.com/articles/ur/application-installation/dh-parameters-for-calculations-of-kinematics-and-dynamics/
+// DH Parameters for UR5.
+// Adapted from
+// https://www.universal-robots.com/articles/ur/application-installation/dh-parameters-for-calculations-of-kinematics-and-dynamics/
 constexpr size_t kNumDOFs = 6;
 const double kRobotA[] = {0, -0.425, -0.39225, 0, 0, 0};
 const double kRobotD[] = {0.089159, 0, 0, 0.10915, 0.09465, 0.0823};
@@ -87,7 +90,7 @@ static constexpr double kWrenchReg = 1e-10;
 static constexpr double kWrenchNormThresh = 1e-5;
 
 // Expand mesh padding
-constexpr double kExpandMesh = 0.002; // 2mm
+constexpr double kExpandMesh = 0.002;  // 2mm
 
 // Finger Settings (default)
 constexpr size_t kNumFingerJoints = 4;
@@ -95,7 +98,7 @@ constexpr size_t kNumFingerJoints = 4;
 // GC Generations (default)
 constexpr double kBaseFriction = 0.5;
 constexpr size_t kConeRes = 4;
-constexpr double kContactFloor = 0.01;     // Floor contact filter
+constexpr double kContactFloor = 0.01;  // Floor contact filter
 
 constexpr size_t kNSeeds = 1000;
 constexpr size_t kNCandidates = 3000;
@@ -126,16 +129,16 @@ constexpr bool kUseAdaptiveSubdivision = false;
 #endif
 
 // Optimization Settings (default)
-constexpr double kOptMaxRuntime = 0.; // seconds
+constexpr double kOptMaxRuntime = 0.;  // seconds
 constexpr size_t kOptMaxIters = 300000;
 constexpr double kOptFingerWiggle = 0.01;
 const Pose kOptTrajWiggle = (Pose() << 5. * kDegToRad,
-                            5. * kDegToRad,
-                            5. * kDegToRad,
-                            45. * kDegToRad,
-                            25. * kDegToRad,
-                            90. * kDegToRad)
-                               .finished();
+                             5. * kDegToRad,
+                             5. * kDegToRad,
+                             45. * kDegToRad,
+                             25. * kDegToRad,
+                             90. * kDegToRad)
+                                .finished();
 constexpr double kOptTolerance = 0.;
 constexpr nlopt_algorithm kOptAlgorithm = NLOPT_GN_CRS2_LM;
 constexpr size_t kOptPopulation = 30000;
@@ -143,15 +146,15 @@ constexpr size_t kOptPopulation = 30000;
 // Topology Optimization Settings (default)
 constexpr double kNegVolRes = 0.004;
 constexpr double kTopoRes = 0.002;
-constexpr double kVolFrac = 0.02; // percentage wrt conservative bound
+constexpr double kVolFrac = 0.02;  // percentage wrt conservative bound
 // Refinement
-constexpr double kAttachmentSize = 0.038; // diameter
+constexpr double kAttachmentSize = 0.038;  // diameter
 constexpr double kContactPointSize = 0.01;
 constexpr double kBaseThickness = 0.01;
 
-
-// Default configurations for Topy
-// Adapted from https://github.com/williamhunter/topy/blob/e1c0efad5cef802b45f5a0abc914cde1eb8abfe9/examples/arm/arm_3d_H8_etaopt_gsf.tpd
+// Default configurations for Topy.
+// Adapted from
+// https://github.com/williamhunter/topy/blob/e1c0efad5cef802b45f5a0abc914cde1eb8abfe9/examples/arm/arm_3d_H8_etaopt_gsf.tpd
 const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"ETA", "0.4"},
                                                         {"DOF_PN", "3"},
@@ -168,7 +171,6 @@ const std::map<std::string, std::string> kTopyConfig = {{"PROB_TYPE", "comp"},
                                                         {"Q_INCR", "0.05"},
                                                         {"Q_CON", "1"},
                                                         {"Q_MAX", "5"}};
-
 
 // UI Helpers
 const char* const kBoolStr[2] = {"False", "True"};
@@ -244,7 +246,6 @@ const char* const kAlgorithms[] = {
 
     "NLOPT_GN_AGS"};
 }
-
 
 namespace colors {
 const Eigen::RowVector3d kPurple = Eigen::RowVector3d(219, 76, 178) / 255;

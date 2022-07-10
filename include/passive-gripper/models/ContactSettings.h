@@ -38,4 +38,4 @@ struct ContactSettings : psg::serialization::Serializable {
   }
 };
 
-}  // namespace models
+}  // namespace psg

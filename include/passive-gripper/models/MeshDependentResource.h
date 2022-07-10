@@ -12,19 +12,20 @@ namespace psg {
 
 class MeshDependentResource : psg::serialization::Serializable {
  public:
-  Eigen::MatrixXd V;  // Vertex list
-  Eigen::MatrixXi F;  // Face list
-  Eigen::MatrixXd FN;  // Per-face normals
-  Eigen::MatrixXd VN;  // Per-vertex normals
-  Eigen::MatrixXd EN;  // Per-edge normals
-  Eigen::MatrixXi E;  // Edge list
-  Eigen::MatrixXi EMAP;  // EMAP returned by igl::per_edge_normals
+  Eigen::MatrixXd V;               // Vertex list
+  Eigen::MatrixXi F;               // Face list
+  Eigen::MatrixXd FN;              // Per-face normals
+  Eigen::MatrixXd VN;              // Per-vertex normals
+  Eigen::MatrixXd EN;              // Per-edge normals
+  Eigen::MatrixXi E;               // Edge list
+  Eigen::MatrixXi EMAP;            // EMAP returned by igl::per_edge_normals
   Eigen::Vector3d center_of_mass;  // Estimated center of mass
-  Eigen::Vector3d minimum;  // Minimum coordinate of vertices
-  Eigen::Vector3d maximum;  // Maxinum coordinate of vertices
+  Eigen::Vector3d minimum;         // Minimum coordinate of vertices
+  Eigen::Vector3d maximum;         // Maxinum coordinate of vertices
   Eigen::Vector3d size;  // Maxinum coordinate minus minimum coordinate
   igl::AABB<Eigen::MatrixXd, 3> tree;  // AABB tree for the mesh
-  igl::embree::EmbreeIntersector intersector;  // Embree data structure for the mesh
+  igl::embree::EmbreeIntersector
+      intersector;  // Embree data structure for the mesh
 
  private:
   // All-pair shortest path

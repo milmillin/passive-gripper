@@ -96,8 +96,7 @@ bool BestInverse(Eigen::Affine3d trans,
     double cur;
     size_t bestI = -1;
     for (size_t j = 0; j < out_poses.size(); j++) {
-      if ((cur = SumSquaredAngularDistance(base, out_poses[j])) <
-          best) {
+      if ((cur = SumSquaredAngularDistance(base, out_poses[j])) < best) {
         best = cur;
         bestI = j;
       }
@@ -145,8 +144,7 @@ JacobianFunc ComputeJacobian(const Pose& pose) {
     Z[i] = H[i].matrix().block<3, 1>(0, 2).transpose();
     d[i] = H[i].translation();
     H[i + 1] =
-        H[i] *
-        JointTransform(pose(i), kRobotA[i], kRobotD[i], kRobotAlpha[i]);
+        H[i] * JointTransform(pose(i), kRobotA[i], kRobotD[i], kRobotAlpha[i]);
   }
 
   Eigen::Affine3d Hlast = H.back();

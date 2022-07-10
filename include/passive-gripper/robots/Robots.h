@@ -50,18 +50,12 @@ bool BestInverse(Eigen::Affine3d trans,
 void ForwardIntermediate(const Pose& pose,
                          std::vector<Eigen::Affine3d>& out_trans);
 
-// Returns a function that returns Jacobian
-//  pos: position in effector space
-//  out_J: Jacobian [dpos/dtheta_0 | ... | dpos/dtheta_5]
-
-
 /// <summary>
-/// Returns a function that given a position returns a Jacobian
-//  pos: position in effector space
-//  out_J: Jacobian [dpos/dtheta_0 | ... | dpos/dtheta_5]
+/// Returns a function that given a position returns a Jacobian:
+/// [dpos/dtheta_0 | ... | dpos/dtheta_5]
 /// </summary>
-/// <param name="pose">Robot pose</param>
-/// <returns>A function</returns>
+/// <param name="pose">Robot's pose</param>
+/// <returns>The function</returns>
 JacobianFunc ComputeJacobian(const Pose& pose);
 
 }  // namespace robots

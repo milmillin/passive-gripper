@@ -135,7 +135,7 @@ class PassiveGripper : public psg::serialization::Serializable {
   }
 
   // === Settings ===
-  
+
   void SetContactSettings(const ContactSettings& settings);
   void SetFingerSettings(const FingerSettings& settings);
   void SetTrajectorySettings(const TrajectorySettings& settings);

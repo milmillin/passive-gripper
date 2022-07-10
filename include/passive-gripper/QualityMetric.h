@@ -14,7 +14,6 @@ namespace psg {
 // Source:
 // https://github.com/BerkeleyAutomation/dex-net/blob/master/src/dexnet/grasping/quality.py
 
-
 /// <summary>
 /// Checks force closure by solving a quadratic program
 /// (whether or not zero is in the convex hull)
@@ -61,7 +60,6 @@ double ComputePartialMinWrenchQP(const std::vector<ContactPoint>& contact_cones,
                                  const Eigen::Vector3d& ext_force,
                                  const Eigen::Vector3d& ext_torque);
 
-
 /// <summary>
 /// Check if it is possible to approach or leave object.
 ///
@@ -100,7 +98,8 @@ int GetFingerDistance(const DiscreteDistanceField& distance_field,
 /// Evaluate the trajectory complexity.
 /// </summary>
 /// <param name="trajectory">Trajectory information</param>
-/// <returns>The sum of L1 difference of joint angles at every keyframe interval.</returns>
+/// <returns>The sum of L1 difference of joint angles at every keyframe
+/// interval.</returns>
 double GetTrajectoryComplexity(const Trajectory& trajectory);
 
 }  // namespace psg

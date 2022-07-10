@@ -1,7 +1,9 @@
 #pragma once
 
-#include <Eigen/Core>
+#include <climits>
 #include <vector>
+
+#include <Eigen/Core>
 
 namespace psg {
 
@@ -54,6 +56,7 @@ class DiscreteDistanceField {
             if (GetVoxelI(coord_next) != -1)
               return GetVoxelI(coord_next);
           }
+    return INT_MAX;
   }
 };
 

@@ -8,6 +8,15 @@
 
 namespace psg {
 
+/// <summary>
+/// Get voxels that the gripper should not occupy.
+/// </summary>
+/// <param name="V">A vertex list of the target object's mesh</param>
+/// <param name="F">A face list of the target object's mesh</param>
+/// <param name="lb">Lower bound of the boundary box for discretization</param>
+/// <param name="ub">Upper bound of the boundary box for discretization</param>
+/// <param name="res">Side length of the grid</param>
+/// <param name="out_range">Stores the number of grids on each dimension</param>
 std::vector<Eigen::Vector3i> GetForbiddenVoxels(const Eigen::MatrixXd& V,
                                                 const Eigen::MatrixXi& F,
                                                 const Eigen::Vector3d& lb,
@@ -33,6 +42,7 @@ void GenerateTopyConfig(const PassiveGripper& psg,
                         const Eigen::MatrixXi& neg_F,
                         const std::string& filename,
                         Debugger* debugger);
+
 /// <summary>
 /// Import Topy optimization result.
 /// </summary>

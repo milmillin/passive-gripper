@@ -1,6 +1,6 @@
 # Computational Design of Passive Grippers
 
-[![REUSE status](https://api.reuse.software/badge/github.com/LouYu2015/passive-gripper)](https://api.reuse.software/info/github.com/LouYu2015/passive-gripper)
+[![REUSE status](https://api.reuse.software/badge/github.com/milmillin/passive-gripper)](https://api.reuse.software/info/github.com/milmillin/passive-gripper)
 
 Public code release for ["Computational Design of Passive Grippers"](https://homes.cs.washington.edu/~milink/passive-gripper/), presented at SIGGRAPH 2022 and authored by Milin Kodnongbua, Ian Good, Yu Lou, Jeffrey Lipton, and Adriana Schulz.
 

@@ -1,3 +1,26 @@
+// The `CreateSpheres` function comes with the following license:
+//   Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
+//   SPDX-License-Identifier: MPL-2.0
+//
+// The `ComputeConvexHull` function uses the Qhull library. Qhull is free
+// software and may be obtained via http from www.qhull.org .
+//                    Qhull, Copyright (c) 1993-2020
+//
+//                            C.B. Barber
+//                           Arlington, MA
+//
+//                               and
+//
+//       The National Science and Technology Research Center for
+//        Computation and Visualization of Geometric Structures
+//                        (The Geometry Center)
+//                       University of Minnesota
+//   SPDX-License-Identifier: LicenseRef-Qhull
+//
+// Other parts are licensed under:
+//   Copyright (c) 2022 The University of Washington and Contributors
+//   SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "GeometryUtils.h"
 
 #include <limits>

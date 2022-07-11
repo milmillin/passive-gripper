@@ -1,6 +1,10 @@
 # Computational Design of Passive Grippers
 
+[![REUSE status](https://api.reuse.software/badge/github.com/LouYu2015/passive-gripper)](https://api.reuse.software/info/github.com/LouYu2015/passive-gripper)
+
 Public code release for ["Computational Design of Passive Grippers"](https://homes.cs.washington.edu/~milink/passive-gripper/), presented at SIGGRAPH 2022 and authored by Milin Kodnongbua, Ian Good, Yu Lou, Jeffrey Lipton, and Adriana Schulz.
+
+You are permitted to use the code only for noncommercial purposes. See the [license section](#license) for details.
 
 ## Installation
 
@@ -187,3 +191,70 @@ Here the four checkboxes are:
 - Face-based shading
 
 You can also check "Robot Viz" to show UR5 model but this will affect the viewing performance.
+
+## License
+
+Most of the code is licensed under the Computational Design of Passive Grippers Non-commercial License. See `LICENSES/LicenseRef-UW-Non-Commercial.txt` for the license text. Please note that some part of the code is protected by patents, including a pending patent by the University of Washington. The license does NOT release the rights related to the patents.
+
+We use the REUSE standard to mark some codes and assets that come with different licences. The license information is contained in each file's header, in `.reuse/dep5`, or in a seperate license file. License texts are planced under the `LICENSES/` folder, with the license identifier as file name.
+
+Here is a list of files that contains a license other than `LicenseRef-UW-Non-Commercial` (Updated 2022-07-11):
+
+	'Apache-2.0' found in:
+	* external/ikfast/
+
+	'BSD-3-Clause' found in:
+	* assets/
+
+	'CC-BY-4.0' found in:
+	* data/
+
+	'CC-BY-SA-4.0' found in:
+	* README.md
+	* docs/
+
+	'CC0-1.0' found in:
+	* .clang-format
+	* .gitignore
+	* .gitmodules
+
+	'GCC-exception-3.1' found in:
+	* external/lapack/libgcc_s_sjlj-1.dll
+	* external/lapack/libgfortran-3.dll
+	* external/lapack/libquadmath-0.dll
+
+	'GPL-3.0-or-later' found in:
+	* external/lapack/libgcc_s_sjlj-1.dll
+	* external/lapack/libgfortran-3.dll
+	* external/lapack/libquadmath-0.dll
+	* external/libigl/
+
+	'LicenseRef-LAPACK-Modified-BSD' found in:
+	* external/lapack/lapack-config-version.cmake
+	* external/lapack/lapack-config.cmake
+	* external/lapack/libblas.dll
+	* external/lapack/libblas.exp
+	* external/lapack/libblas.lib
+	* external/lapack/liblapack.dll
+	* external/lapack/liblapack.lib
+
+	'LicenseRef-Qhull' found in:
+	* include/passive-gripper/GeometryUtils.cpp
+	* include/passive-gripper/GeometryUtils.h
+
+	'LicenseRef-UC-Berkeley-Copyright-and-Disclaimer-Notice' found in:
+	* include/passive-gripper/QualityMetric.cpp
+	* include/passive-gripper/QualityMetric.h
+
+	'MIT' found in:
+	* external/autodiff/
+	* external/swept-volumes/
+	* include/passive-gripper/Constants.h
+	* include/passive-gripper/SweptVolume.cpp
+	* include/passive-gripper/SweptVolume.h
+
+	'MPL-2.0' found in:
+	* cmake/FindLIBIGL.cmake
+	* external/libigl/
+	* include/passive-gripper/GeometryUtils.cpp
+	* include/passive-gripper/GeometryUtils.h

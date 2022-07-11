@@ -1,3 +1,7 @@
+# Copyright (c) 2022 The University of Washington and Contributors
+#
+# SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 cmake_minimum_required(VERSION 3.14)
 project(passive-gripper)
 

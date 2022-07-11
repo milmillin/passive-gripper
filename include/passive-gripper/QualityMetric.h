@@ -1,3 +1,12 @@
+// The `CheckForceClosureQP`, `CheckPartialClosureQP` and `ComputeMinWrenchQP`
+// functions are adapted from the Dex-Net package, which is licensed under:
+//   Copyright (c) 2017. The Regents of the University of California (Regents). All Rights Reserved.
+//   SPDX-License-Identifier: LicenseRef-UC-Berkeley-Copyright-and-Disclaimer-Notice
+//
+// Other parts are licensed under:
+//   Copyright (c) 2022 The University of Washington and Contributors
+//   SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include <Eigen/Core>

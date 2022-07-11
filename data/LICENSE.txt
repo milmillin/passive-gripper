@@ -1,0 +1,7 @@
+This data set is adapted from the YCB dataset and licensed under:
+
+Copyright (c) 2015 Berk C. Calli, Arjun Singh, Aaron Walsman, Siddhartha Srinivasa, Pieter Abbeel and Aaron M. Dollar
+Copyright (c) 2022 The University of Washington and Contributors.
+
+SPDX-License-Identifier: CC-BY-4.0
+SPDX-PackageSourceInfo: http://ycb-benchmarks.s3-website-us-east-1.amazonaws.com/ and https://homes.cs.washington.edu/~milink/passive-gripper/

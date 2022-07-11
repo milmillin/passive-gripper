@@ -1,3 +1,13 @@
+// The Topy default parameters comes with the following license:
+//   Copyright (c) [2011, 2015, 2016, 2017] [William Hunter]
+//   SPDX-License-Identifier: MIT
+//
+// The UR5 parameters comes from the Universal Robots' website.
+//
+// Other parts are licensed under:
+//   Copyright (c) 2022 The University of Washington and Contributors
+//   SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #define DECLARE_GETTER(x, y)                      \

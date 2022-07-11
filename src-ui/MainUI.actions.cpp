@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "MainUI.h"
 #include <igl/FileEncoding.h>
 #include <igl/writeSTL.h>

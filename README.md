@@ -34,7 +34,7 @@ The compilation is done using the standard cmake routine. Inside the root projec
 mkdir build
 cd build
 cmake .. -DCMAKE_TOOLCHAIN_FILE=[path to vcpkg]/scripts/buildsystems/vcpkg.cmake
-cmake --build .
+cmake --build -j .
 
 ```
 

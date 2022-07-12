@@ -77,7 +77,7 @@ void MeshDependentResource::init_sp() const {
     bool operator<(const VertexInfo& r) const { return dist > r.dist; }
   };
 #pragma omp parallel for
-  for (size_t src = 0; src < nV; src++) {
+  for (int src = 0; src < (int) nV; src++) {
     std::priority_queue<VertexInfo> q;
     q.push(VertexInfo{(int) src, 0});
     SP_(src, src) = 0;

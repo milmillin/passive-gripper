@@ -223,7 +223,7 @@ void MainUI::DrawCostDebugPanel() {
     ImGui::LabelText("Num Iters: ", "%d", (int)cost_dbg_infos_.size());
     if (ImGui::InputInt("Iter: ", &selected_iter_)) {
       if (selected_iter_ < 0) selected_iter_ = 0;
-      if ((size_t) selected_iter_ > cost_dbg_infos_.size())
+      if ((size_t)selected_iter_ > cost_dbg_infos_.size())
         selected_iter_ = cost_dbg_infos_.size() - 1;
 
       if (selected_iter_ >= 0) {
@@ -343,7 +343,7 @@ void MainUI::DrawContactPointPanel() {
     size_t to_delete = SIZE_MAX;
     const auto& contact_points = vm_.PSG().GetContactPoints();
     for (size_t i = 0; i < contact_points.size(); i++) {
-      snprintf(buf_, sizeof(buf_), "Delete C%llu", (long long unsigned) i);
+      snprintf(buf_, sizeof(buf_), "Delete C%llu", (long long unsigned)i);
       if (ImGui::Button(buf_, ImVec2(w, 0))) {
         to_delete = i;
       }
@@ -377,7 +377,8 @@ void MainUI::DrawTransformPanel() {
       vm_.PSG().TransformMesh(trans);
     }
   }
-  if (ImGui::CollapsingHeader("Mesh Manipulation", ImGuiTreeNodeFlags_DefaultOpen)) {
+  if (ImGui::CollapsingHeader("Mesh Manipulation",
+                              ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Remesh##a", ImVec2(w, 0))) {
       Eigen::MatrixXd V;
       Eigen::MatrixXi F;
@@ -525,7 +526,8 @@ void MainUI::DrawOptimizationPanel() {
         ImGui::InputDouble("Gripper Energy", &cost_settings.gripper_energy, 1);
     cost_update |=
         ImGui::InputDouble("Traj Energy", &cost_settings.traj_energy, 1);
-    cost_update |= ImGui::Checkbox("Use Adaptive Subdivision", &cost_settings.use_adaptive_subdivision);
+    cost_update |= ImGui::Checkbox("Use Adaptive Subdivision",
+                                   &cost_settings.use_adaptive_subdivision);
     ImGui::Checkbox("Debug", &optimizer_.debug);
     if (opt_update) vm_.PSG().SetOptSettings(opt_settings);
     if (cost_update) vm_.PSG().SetCostSettings(cost_settings);

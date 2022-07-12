@@ -62,7 +62,7 @@ double MinDistance(const GripperParams& params,
   }
   Eigen::MatrixXd D_fingers(d_fingers.size(), 3);
 #pragma omp parallel for
-  for (long long i = 0; i < (long long) d_fingers.size(); i++) {
+  for (long long i = 0; i < (long long)d_fingers.size(); i++) {
     D_fingers.row(i) = d_fingers[i];
   }
 
@@ -324,7 +324,7 @@ double ComputeCost_SP(const GripperParams& params,
   std::vector<Eigen::Affine3d> new_trans(n_trajectory);
 
 #pragma omp parallel for
-  for (long long i = 0; i < (long long) new_trajectory.size(); i++) {
+  for (long long i = 0; i < (long long)new_trajectory.size(); i++) {
     new_trans[i] = robots::Forward(new_trajectory[i]);
     new_fingers[i] = TransformFingers(fingers, new_trans[i]);
   }
@@ -424,7 +424,7 @@ double ComputeCost_SP(const GripperParams& params,
       _SegState state;
 
 #pragma omp for nowait
-      for (long long j = 0; j < (long long) d_fingers.size(); j++) {
+      for (long long j = 0; j < (long long)d_fingers.size(); j++) {
         Eigen::Vector3d p0 = new_trans[0] * d_fingers[j];
         state.is_first = true;
         double cur_cost = 0;

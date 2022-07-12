@@ -187,10 +187,10 @@ bool ViewModel::ComputeInitParams() {
   Eigen::Vector3d effector_pos =
       robots::Forward(psg_.GetTrajectory().front()).translation();
   init_params_.fingers =
-        InitializeFingers(psg_.GetContactPoints(),
-                         psg_.GetFloorMDR(),
-                         effector_pos,
-                         psg_.GetFingerSettings().n_finger_joints);
+      InitializeFingers(psg_.GetContactPoints(),
+                        psg_.GetFloorMDR(),
+                        effector_pos,
+                        psg_.GetFingerSettings().n_finger_joints);
   init_params_.trajectory =
       InitializeTrajectory(init_params_.fingers, psg_.GetTrajectory().front());
   init_params_.contact_points = psg_.GetContactPoints();

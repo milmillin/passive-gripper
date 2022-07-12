@@ -191,8 +191,7 @@ void ProcessFrom(std::string raw_fn,
         Error() << ">> Skipping" << std::endl;
         continue;
       }
-      psg::RefineGripper(
-          psg, r_V, r_F, neg_V, neg_F, gripper_V, gripper_F);
+      psg::RefineGripper(psg, r_V, r_F, neg_V, neg_F, gripper_V, gripper_F);
       Log() << "> Writing Gripper STL " << gripper_fn << std::endl;
       if (!igl::writeSTL(
               gripper_fn, gripper_V, gripper_F, igl::FileEncoding::Binary)) {

@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
 
 #include "MainUI.h"
+
 #include <igl/FileEncoding.h>
-#include <igl/writeSTL.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/writeSTL.h>
+
 #include <passive-gripper/GeometryUtils.h>
 
 namespace psg {
@@ -180,5 +182,5 @@ void MainUI::OnLoadContactPointCandidates() {
   psg::serialization::Deserialize(contact_point_candidates_, f);
 }
 
-}
+}  // namespace ui
 }  // namespace psg

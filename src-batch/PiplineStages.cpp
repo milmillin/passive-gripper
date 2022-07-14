@@ -1,11 +1,16 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "PipelineStages.h"
+
+#include <chrono>
+#include <fstream>
+#include <stdexcept>
 
 #include <igl/readSTL.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <Eigen/Core>
-#include <fstream>
-#include <stdexcept>
-#include <chrono>
 
 #include <passive-gripper/Initialization.h>
 #include <passive-gripper/PassiveGripper.h>
@@ -28,7 +33,7 @@ void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn) {
   Eigen::VectorXd SVJ;
   igl::remove_duplicate_vertices(V, 0, SV, SVI, SVJ);
   Eigen::MatrixXi SF = F;
-  for (size_t i = 0; i < SF.size(); i++) {
+  for (Eigen::Index i = 0; i < SF.size(); i++) {
     SF(i) = SVJ(SF(i));
   }
 
@@ -49,11 +54,9 @@ void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn) {
   Log() << "PSG written to: " << psg_fn << std::endl;
 }
 
-void GenerateCPX(const psg::PassiveGripper& psg,
-                 const std::string& cpx_fn) {
+void GenerateCPX(const psg::PassiveGripper& psg, const std::string& cpx_fn) {
   auto start_time = std::chrono::high_resolution_clock::now();
-  auto cps = psg::InitializeGCs(
-      psg, psg::kNSeeds, psg::kNCandidates);
+  auto cps = psg::InitializeGCs(psg, psg::kNSeeds, psg::kNCandidates);
   auto stop_time = std::chrono::high_resolution_clock::now();
   long long duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                            stop_time - start_time)

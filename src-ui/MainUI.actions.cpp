@@ -1,7 +1,13 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "MainUI.h"
+
 #include <igl/FileEncoding.h>
-#include <igl/writeSTL.h>
 #include <igl/remove_duplicate_vertices.h>
+#include <igl/writeSTL.h>
+
 #include <passive-gripper/GeometryUtils.h>
 
 namespace psg {
@@ -45,7 +51,7 @@ void MainUI::OnLoadMeshClicked() {
   Eigen::VectorXd SVJ;
   igl::remove_duplicate_vertices(V, 0, SV, SVI, SVJ);
   Eigen::MatrixXi SF = F;
-  for (size_t i = 0; i < SF.size(); i++) {
+  for (Eigen::Index i = 0; i < SF.size(); i++) {
     SF(i) = SVJ(SF(i));
   }
 
@@ -176,5 +182,5 @@ void MainUI::OnLoadContactPointCandidates() {
   psg::serialization::Deserialize(contact_point_candidates_, f);
 }
 
-}
+}  // namespace ui
 }  // namespace psg

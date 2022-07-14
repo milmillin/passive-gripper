@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "Optimizer.h"
 
 namespace psg {
@@ -15,7 +19,7 @@ void MyFlatten(const GripperParams& meta,
                double* ub) {
   for (size_t i = 0; i < meta.fingers.size(); i++) {
     const auto& finger = meta.fingers[i];
-    for (size_t r = 1; r < finger.rows() - 1; r++) {
+    for (Eigen::Index r = 1; r < finger.rows() - 1; r++) {
       for (size_t c = 0; c < 3; c++) {
         *lb = *ub = *(x++) = finger(r, c);
         *lb -= settings.finger_wiggle;
@@ -27,7 +31,7 @@ void MyFlatten(const GripperParams& meta,
   }
   for (size_t i = 1; i < meta.trajectory.size() - 1; i++) {
     const auto& keyframe = meta.trajectory[i];
-    for (size_t j = 0; j < keyframe.size(); j++) {
+    for (Eigen::Index j = 0; j < keyframe.size(); j++) {
       *lb = *ub = *(x++) = keyframe[j];
       *lb -= settings.trajectory_wiggle[j];
       *ub += settings.trajectory_wiggle[j];
@@ -40,7 +44,7 @@ void MyFlatten(const GripperParams& meta,
 void MyFlattenGrad(const GripperParams& meta, double* x) {
   for (size_t i = 0; i < meta.fingers.size(); i++) {
     const auto& finger = meta.fingers[i];
-    for (size_t r = 1; r < finger.rows() - 1; r++) {
+    for (Eigen::Index r = 1; r < finger.rows() - 1; r++) {
       for (size_t c = 0; c < 3; c++) {
         *(x++) = finger(r, c);
       }
@@ -48,7 +52,7 @@ void MyFlattenGrad(const GripperParams& meta, double* x) {
   }
   for (size_t i = 1; i < meta.trajectory.size() - 1; i++) {
     const auto& keyframe = meta.trajectory[i];
-    for (size_t j = 0; j < keyframe.size(); j++) {
+    for (Eigen::Index j = 0; j < keyframe.size(); j++) {
       *(x++) = keyframe[j];
     }
   }
@@ -58,7 +62,7 @@ void MyFlattenGrad(const GripperParams& meta, double* x) {
 void MyUnflatten(GripperParams& meta, const double* x) {
   for (size_t i = 0; i < meta.fingers.size(); i++) {
     auto& finger = meta.fingers[i];
-    for (size_t r = 1; r < finger.rows() - 1; r++) {
+    for (Eigen::Index r = 1; r < finger.rows() - 1; r++) {
       for (size_t c = 0; c < 3; c++) {
         finger(r, c) = *(x++);
       }
@@ -66,7 +70,7 @@ void MyUnflatten(GripperParams& meta, const double* x) {
   }
   for (size_t i = 1; i < meta.trajectory.size() - 1; i++) {
     auto& keyframe = meta.trajectory[i];
-    for (size_t j = 0; j < keyframe.size(); j++) {
+    for (Eigen::Index j = 0; j < keyframe.size(); j++) {
       keyframe[j] = *(x++);
     }
   }

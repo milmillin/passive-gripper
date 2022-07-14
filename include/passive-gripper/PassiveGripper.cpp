@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "PassiveGripper.h"
 
 #include <igl/copyleft/cgal/mesh_boolean.h>
@@ -410,11 +414,7 @@ void PassiveGripper::InvalidateQuality() {
 void PassiveGripper::InvalidateCost() {
   cost_changed_ = false;
   cost_ = ComputeCost_SP(
-      params_,
-      params_,
-      settings_,
-      mdr_remeshed_,
-      CostContext{nullptr, -1});
+      params_, params_, settings_, mdr_remeshed_, CostContext{nullptr, -1});
   min_dist_ = MinDistance(params_, settings_, mdr_remeshed_);
   InvokeInvalidated(InvalidatedReason::kCost);
 }

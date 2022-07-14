@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include <algorithm>
@@ -12,7 +16,6 @@ namespace psg_batch {
 void GeneratePSG(const std::string& stl_fn, const std::string& psg_fn);
 
 // Generates a CPX file containing a ranked list of grasp configurations.
-void GenerateCPX(const psg::PassiveGripper& psg,
-                 const std::string& cpx_fn);
+void GenerateCPX(const psg::PassiveGripper& psg, const std::string& cpx_fn);
 
 }  // namespace psg_batch

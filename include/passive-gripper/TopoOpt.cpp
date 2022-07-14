@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "TopoOpt.h"
 
 #include <Eigen/Core>
@@ -41,7 +45,7 @@ std::vector<Eigen::Vector3i> GetForbiddenVoxels(const Eigen::MatrixXd& V,
   igl::embree::EmbreeIntersector intersector;
   intersector.init(V.cast<float>(), F, true);
   std::vector<Eigen::Vector3i> voxels;
-  int x, y, z;
+  int x = 0, y = 0, z = 0;
   double cx, cy, cz;
   for (x = 0, cx = lb(0); cx < ub(0); x++, cx += res) {
     for (y = 0, cy = lb(1); cy < ub(1); y++, cy += res) {
@@ -311,7 +315,6 @@ bool LoadResultBin(const PassiveGripper& psg,
   serialization::Deserialize(values, myfile);
 
   Eigen::Vector3d lb = psg.GetTopoOptSettings().lower_bound;
-  Eigen::Vector3d ub = psg.GetTopoOptSettings().upper_bound;
   double res = psg.GetTopoOptSettings().topo_res;
 
   // marching cube
@@ -331,7 +334,7 @@ bool LoadResultBin(const PassiveGripper& psg,
 
   Eigen::VectorXd fltr_values;
   fltr_values.resize(values.rows(), 1);
-  for (size_t i = 0; i < values.rows(); i++) {
+  for (Eigen::Index i = 0; i < values.rows(); i++) {
     long long ex = i % rx;
     long long ey = (i / rx) % ry;
     long long ez = (i / (rx * ry));
@@ -355,7 +358,7 @@ bool LoadResultBin(const PassiveGripper& psg,
     fltr_values(i) = (count == 0) ? 0 : (val / count);
   }
 
-  for (size_t i = 0; i < values.rows(); i++) {
+  for (Eigen::Index i = 0; i < values.rows(); i++) {
     long long ex = i % rx;
     long long ey = (i / rx) % ry;
     long long ez = (i / (rx * ry));

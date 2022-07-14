@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include <Eigen/Core>
@@ -135,7 +139,7 @@ class PassiveGripper : public psg::serialization::Serializable {
   }
 
   // === Settings ===
-  
+
   void SetContactSettings(const ContactSettings& settings);
   void SetFingerSettings(const FingerSettings& settings);
   void SetTrajectorySettings(const TrajectorySettings& settings);

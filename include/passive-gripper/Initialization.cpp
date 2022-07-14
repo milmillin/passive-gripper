@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "Initialization.h"
 
 #include <igl/random_points_on_mesh.h>
@@ -76,7 +80,7 @@ Eigen::MatrixXd InitializeFinger(const ContactPoint contact_point,
 
   closest_point += mdr.FN.row(fid) * 1e-5;
 
-  size_t vid = -1;
+  int vid = -1;
   double bestDist = std::numeric_limits<double>::max();
   double curDist;
   for (int j = 0; j < 3; j++) {
@@ -217,7 +221,6 @@ void InitializeContactPointSeeds(const PassiveGripper& psg,
                                  std::vector<int>& out_FI,
                                  std::vector<Eigen::Vector3d>& out_X) {
   const MeshDependentResource& mdr_floor = psg.GetFloorMDR();
-  const MeshDependentResource& mdr_remeshed = psg.GetRemeshedMDR();
   const MeshDependentResource& mdr = psg.GetMDR();
   double floor = psg.GetContactSettings().floor;
 
@@ -364,7 +367,7 @@ std::vector<ContactPointMetric> InitializeGCs(const PassiveGripper& psg,
   // Remove solutions that are not in the frontier
   double partial_min_wrench = -1;
   std::vector<ContactPointMetric> result;
-  for (int i = 0; i < prelim.size(); i++) {
+  for (size_t i = 0; i < prelim.size(); i++) {
     if (prelim[i].partial_min_wrench >= partial_min_wrench) {
       result.push_back(prelim[i]);
       partial_min_wrench = prelim[i].partial_min_wrench;
@@ -409,8 +412,6 @@ void InitializeConservativeBound(const PassiveGripper& psg,
   double attachment_r = psg.GetTopoOptSettings().attachment_size / 2.;
   out_lb.x() = out_lb.y() = -attachment_r;
   out_ub.x() = out_ub.y() = attachment_r;
-
-  Eigen::Affine3d finger_trans_inv = psg.GetFingerTransInv();
 
   auto V = (psg.GetFingerTransInv() *
             psg.GetMDR().V.transpose().colwise().homogeneous())

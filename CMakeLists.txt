@@ -1,3 +1,7 @@
+# Copyright (c) 2022 The University of Washington and Contributors
+#
+# SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 cmake_minimum_required(VERSION 3.14)
 project(passive-gripper)
 
@@ -125,7 +129,7 @@ add_library(ikfast "external/ikfast/ikfast61.cpp")
 include_directories("external/ikfast")
 
 # Linking
-set(CORE_LINK_LIBS igl::core igl::embree igl::png igl::cgal lapack Qhull::qhullcpp NLopt::nlopt CGAL::CGAL swept-volume ikfast)
+set(CORE_LINK_LIBS ikfast igl::core igl::embree igl::png igl::cgal lapack Qhull::qhullcpp NLopt::nlopt CGAL::CGAL swept-volume)
 if (NOT MSVC)
     list(APPEND CORE_LINK_LIBS stdc++fs Qhull::qhullstatic_r)
 else()

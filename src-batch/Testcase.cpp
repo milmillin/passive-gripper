@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "Testcase.h"
 
 #include <igl/copyleft/cgal/mesh_boolean.h>
@@ -50,7 +54,10 @@ void ProcessFrom(std::string raw_fn,
   psg.Deserialize(psg_file);
   Log() << "> Loaded " << psg_fn << std::endl;
 
+  // Override settings passed by caller
+  stgo.Apply(psg);
   try {
+    // Override settings stored in the same folder as the model
     psg::SettingsOverrider stgo;
     std::string stgo_fn = raw_fn + ".stgo";
     stgo.Load(stgo_fn);
@@ -96,7 +103,6 @@ void ProcessFrom(std::string raw_fn,
     std::string out_fn = output_dir + '/' + out_raw_fn;
 
     double traj_complexity = 0;
-    double pi_volume = -1.;
     double volume = -1.;
     Eigen::MatrixXd neg_V;
     Eigen::MatrixXi neg_F;
@@ -145,7 +151,7 @@ void ProcessFrom(std::string raw_fn,
       } else {
         const psg::Trajectory& traj = psg.GetTrajectory();
         for (int i = traj.size() - 1; i >= 0; i--) {
-          for (int j = 0; j < psg::kNumDOFs; j++) {
+          for (size_t j = 0; j < psg::kNumDOFs; j++) {
             traj_csv_file << std::setprecision(15) << traj[i](j) << ",";
           }
           traj_csv_file << std::endl;
@@ -185,8 +191,7 @@ void ProcessFrom(std::string raw_fn,
         Error() << ">> Skipping" << std::endl;
         continue;
       }
-      psg::RefineGripper(
-          psg, r_V, r_F, neg_V, neg_F, gripper_V, gripper_F);
+      psg::RefineGripper(psg, r_V, r_F, neg_V, neg_F, gripper_V, gripper_F);
       Log() << "> Writing Gripper STL " << gripper_fn << std::endl;
       if (!igl::writeSTL(
               gripper_fn, gripper_V, gripper_F, igl::FileEncoding::Binary)) {

@@ -1,3 +1,13 @@
+# Copyright (c) 1992-2013 The University of Tennessee and The University
+# of Tennessee Research Foundation.  All rights
+# reserved.
+# Copyright (c) 2000-2013 The University of California Berkeley. All
+# rights reserved.
+# Copyright (c) 2006-2013 The University of Colorado Denver.  All rights
+# reserved.
+#
+# SPDX-License-Identifier: LicenseRef-LAPACK-Modified-BSD
+#
 # This is a basic version file for the Config-mode of find_package().
 # It is used by write_basic_package_version_file() as input file for configure_file()
 # to create a version-file which can be installed along a config.cmake file.

@@ -1,0 +1,6 @@
+The 3D models in this folder are adapted from the Universal Robots package and licensed under:
+
+Copyright Wim Meeussen, Kelsey Hawkins, Mathias Ludtke, Felix Messmer, G.A. vd. Hoorn <g.a.vanderhoorn@tudelft.nl>, Miguel Prada Sarasola <miguel.prada@tecnalia.com> and Nadia Hammoudeh Garcia <nhg@ipa.fhg.de>
+
+SPDX-License-Identifier: BSD-3-Clause
+SPDX-PackageSourceInfo: https://github.com/ros-industrial/universal_robot

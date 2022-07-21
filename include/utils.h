@@ -1,11 +1,15 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include <chrono>
 #include <ctime>
-#include <iostream>
-#include <string>
-#include <sstream>
 #include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 inline std::ostream& LogImpl(const char* type) {
   static thread_local char buf[64];

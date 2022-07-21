@@ -1,9 +1,12 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
 
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "MainUI.h"
 
-int main(int argv, char** argc) {
+int main() {
   psg::ui::MainUI ui;
   igl::opengl::glfw::Viewer viewer;
   viewer.plugins.push_back(&ui);

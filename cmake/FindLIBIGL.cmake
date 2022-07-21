@@ -1,8 +1,14 @@
+# SPDX-FileCopyrightText: 2020 Alec Jacobson
+#
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-PackageSourceInfo: https://github.com/alecjacobson/libigl-example-project-with-multiple-executables
+#
 # - Try to find the LIBIGL library
 # Once done this will define
 #
 #  LIBIGL_FOUND - system has LIBIGL
 #  LIBIGL_INCLUDE_DIR - **the** LIBIGL include directory
+
 if(LIBIGL_FOUND)
     return()
 endif()

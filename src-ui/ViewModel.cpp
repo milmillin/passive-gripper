@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "ViewModel.h"
 
 #include <igl/readSTL.h>
@@ -57,7 +61,7 @@ void ViewModel::SetCurrentPose(const Eigen::Vector3d& pos,
 }
 
 void ViewModel::TogglePose() {
-  if (ik_sols_index_ != -1) {
+  if (ik_sols_index_ != SIZE_MAX) {
     ik_sols_index_ = (ik_sols_index_ + 1) % ik_sols_.size();
     current_pose_ = ik_sols_[ik_sols_index_];
     PoseChanged();
@@ -140,7 +144,7 @@ void ViewModel::ComputeIK() {
     current_pose_ = ik_sols_[best];
     ik_sols_index_ = best;
   } else {
-    ik_sols_index_ = -1;
+    ik_sols_index_ = SIZE_MAX;
   }
 }
 
@@ -182,11 +186,11 @@ void ViewModel::OnPsgInvalidated(PassiveGripper::InvalidatedReason reason) {
 bool ViewModel::ComputeInitParams() {
   Eigen::Vector3d effector_pos =
       robots::Forward(psg_.GetTrajectory().front()).translation();
-  init_params_.fingers = 
-        InitializeFingers(psg_.GetContactPoints(),
-                         psg_.GetFloorMDR(),
-                         effector_pos,
-                         psg_.GetFingerSettings().n_finger_joints);
+  init_params_.fingers =
+      InitializeFingers(psg_.GetContactPoints(),
+                        psg_.GetFloorMDR(),
+                        effector_pos,
+                        psg_.GetFingerSettings().n_finger_joints);
   init_params_.trajectory =
       InitializeTrajectory(init_params_.fingers, psg_.GetTrajectory().front());
   init_params_.contact_points = psg_.GetContactPoints();

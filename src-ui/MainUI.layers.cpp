@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "MainUI.h"
 
 #include <passive-gripper/GeometryUtils.h>
@@ -41,10 +45,10 @@ void MainUI::OnLayerInvalidated(Layer layer) {
     case Layer::kGripper:
       OnGripperInvalidated();
       break;
-    case Layer::kGradient:
-      break;
     case Layer::kContactFloor:
       OnContactFloorInvalidated();
+      break;
+    default:
       break;
   }
 }
@@ -269,7 +273,8 @@ void MainUI::OnTrajectoryInvalidated(Layer layer) {
 
   for (size_t i = 0; i < nKeyframe; i++) {
     Eigen::Affine3d curTrans = robots::Forward(trajectory[i]);
-    V.block<4, 3>(i * 4, 0).transpose() = curTrans * (0.01 * axis_V).transpose();
+    V.block<4, 3>(i * 4, 0).transpose() =
+        curTrans * (0.01 * axis_V).transpose();
     E.block<3, 2>(i * 3, 0) = axis_E.array() + (4 * i);
     C.block<3, 3>(i * 3, 0) = Eigen::Matrix3d::Identity();
     if (i + 1 < nKeyframe) {
@@ -296,7 +301,6 @@ void MainUI::OnSweptSurfaceInvalidated() {
   static constexpr double fingerStep = 1. / nFingerSteps;
 
   const size_t nKeyframes = trajectory.size();
-  const size_t nDOF = trajectory.front().size();
   const size_t nFingerJoints = fingers.front().rows();
 
   const size_t nFrames = (nKeyframes - 1) * nTrajectorySteps + 1;
@@ -332,7 +336,7 @@ void MainUI::OnSweptSurfaceInvalidated() {
   }
   for (size_t iKf = 1; iKf < nKeyframes; iKf++) {
     Pose t_lerpedKeyframe;
-    for (long long j = 1; j <= nTrajectorySteps; j++) {
+    for (size_t j = 1; j <= nTrajectorySteps; j++) {
       double trajectoryT = j * trajectoryStep;
       for (size_t k = 0; k < kNumDOFs; k++) {
         t_lerpedKeyframe[k] = trajectory[iKf - 1][k] * (1 - trajectoryT) +

@@ -1,6 +1,8 @@
 // -*- coding: utf-8 -*-
 // Copyright (C) 2012-2014 Rosen Diankov <rosen.diankov@gmail.com>
 //
+// SPDX-License-Identifier: Apache-2.0
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,7 +90,7 @@ public:
     virtual const std::vector<int>& GetFree() const = 0;
 
     /// \brief the dof of the solution
-    virtual const int GetDOF() const = 0;
+    virtual int GetDOF() const = 0;
 };
 
 /// \brief manages all the solutions
@@ -182,7 +184,7 @@ public:
     virtual const std::vector<int>& GetFree() const {
         return _vfree;
     }
-    virtual const int GetDOF() const {
+    virtual int GetDOF() const {
         return static_cast<int>(_vbasesol.size());
     }
 

@@ -1,0 +1,22 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Computational Design of Passive Grippers
+Upstream-Contact: Milin Kodnongbua <milink@cs.washington.edu>
+Source: https://homes.cs.washington.edu/~milink/passive-gripper/
+
+Files: assets/*
+Copyright: Wim Meeussen, Kelsey Hawkins, Mathias Ludtke, Felix Messmer, G.A. vd. Hoorn <g.a.vanderhoorn@tudelft.nl>, Miguel Prada Sarasola <miguel.prada@tecnalia.com> and Nadia Hammoudeh Garcia <nhg@ipa.fhg.de>
+License: BSD-3-Clause
+Comment: https://github.com/ros-industrial/universal_robot
+
+Files: data/*
+Copyright: 2015 Berk C. Calli, Arjun Singh, Aaron Walsman, Siddhartha Srinivasa, Pieter Abbeel and Aaron M. Dollar. 2022 The University of Washington and Contributors.
+License: CC-BY-4.0
+Comment: http://ycb-benchmarks.s3-website-us-east-1.amazonaws.com/
+
+Files: README.md docs/*
+Copyright: 2022 Milin Kodnongbua <milink@cs.washington.edu>
+License: CC-BY-SA-4.0
+
+Files: .clang-format .gitignore .gitmodules
+Copyright: Computational Design of Passive Grippers Authors
+License: CC0-1.0

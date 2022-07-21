@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include <Eigen/Core>
@@ -94,12 +98,12 @@ inline void Deserialize(T& obj, const std::string& fn);
 // Serializable
 template <typename T,
           std::enable_if_t<std::is_base_of_v<Serializable, T>, bool> = true>
-  void Serialize(const T& obj, std::ofstream& f) {
+void Serialize(const T& obj, std::ofstream& f) {
   static_cast<const Serializable*>(&obj)->Serialize(f);
 }
 template <typename T,
           std::enable_if_t<std::is_base_of_v<Serializable, T>, bool> = true>
-  void Deserialize(T& obj, std::ifstream& f) {
+void Deserialize(T& obj, std::ifstream& f) {
   static_cast<Serializable*>(&obj)->Deserialize(f);
 }
 
@@ -250,4 +254,3 @@ inline void Deserialize(T& obj, const std::string& fn) {
 #define DESERIALIZE(obj) psg::serialization::Deserialize(obj, f)
 #define DECL_SERIALIZE() inline void Serialize(std::ofstream& f) const override
 #define DECL_DESERIALIZE() inline void Deserialize(std::ifstream& f) override
-

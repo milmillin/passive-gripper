@@ -1,3 +1,7 @@
+// Copyright (c) 2022 The University of Washington and Contributors
+//
+// SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #pragma once
 
 #include "../serialization/Serialization.h"
@@ -5,13 +9,21 @@
 namespace psg {
 
 struct TopoOptSettings : psg::serialization::Serializable {
-  Eigen::Vector3d lower_bound = Eigen::Vector3d(-0.2, -0.05, 0.5); // dummy
-  Eigen::Vector3d upper_bound = Eigen::Vector3d(0.05, 0.2, 0.8); // dummy
+  // Lower bound of the optimization space (will be updated by UI)
+  Eigen::Vector3d lower_bound = Eigen::Vector3d(-0.2, -0.05, 0.5);
+  // Upper bound of the optimization space (will be updated by UI)
+  Eigen::Vector3d upper_bound = Eigen::Vector3d(0.05, 0.2, 0.8);
+  // Resolution for negative space
   double neg_vol_res = kNegVolRes;
+  // Resolution for topology optimization
   double topo_res = kTopoRes;
+  // Radius of the base where the gripper is attached to the robot
   double attachment_size = kAttachmentSize;
+  // Target fraction of volume that the gripper should occupy
   double vol_frac = kVolFrac;
+  // Size of finger tip
   double contact_point_size = kContactPointSize;
+  // Thickness of the base
   double base_thickness = kBaseThickness;
 
   DECL_SERIALIZE() {
@@ -37,7 +49,7 @@ struct TopoOptSettings : psg::serialization::Serializable {
       DESERIALIZE(neg_vol_res);
       DESERIALIZE(topo_res);
       DESERIALIZE(attachment_size);
-      DESERIALIZE(__unused); // int
+      DESERIALIZE(__unused);  // int
       DESERIALIZE(contact_point_size);
       DESERIALIZE(base_thickness);
     } else if (version == 2) {

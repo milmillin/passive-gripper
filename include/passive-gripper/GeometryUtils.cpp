@@ -1,9 +1,35 @@
+// The `CreateSpheres` function comes with the following license:
+//   Copyright (C) 2018 Amir Vaxman <avaxman@gmail.com>
+//   SPDX-License-Identifier: MPL-2.0
+//
+// The `ComputeConvexHull` function uses the Qhull library. Qhull is free
+// software and may be obtained via http from www.qhull.org .
+//                    Qhull, Copyright (c) 1993-2020
+//
+//                            C.B. Barber
+//                           Arlington, MA
+//
+//                               and
+//
+//       The National Science and Technology Research Center for
+//        Computation and Visualization of Geometric Structures
+//                        (The Geometry Center)
+//                       University of Minnesota
+//   SPDX-License-Identifier: LicenseRef-Qhull
+//
+// Other parts are licensed under:
+//   Copyright (c) 2022 The University of Washington and Contributors
+//   SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "GeometryUtils.h"
 
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
-#include <limits>
 
+// global_functions_3.h will fix the error of not finding CGAL::midpoint.
+// It seems to be an upstream bug that this file is not included automatically.
+#include <CGAL/Kernel/global_functions_3.h>
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <CGAL/Polyhedron_3.h>
 #include <igl/copyleft/cgal/mesh_boolean.h>
@@ -259,7 +285,7 @@ bool ComputeConvexHull(const Eigen::MatrixXd& points,
   RboxPoints rbox;
   size_t dim = points.cols();
   rbox.setDimension(dim);
-  for (size_t i = 0; i < points.rows(); i++) {
+  for (Eigen::Index i = 0; i < points.rows(); i++) {
     for (size_t j = 0; j < dim; j++) {
       rbox.append(points(i, j));
     }
@@ -399,7 +425,7 @@ Eigen::Vector3d CenterOfMass(const Eigen::MatrixXd& V,
   // volume-weighted average of COM of tets
   double volume = 0;
   Eigen::RowVector3d center(0, 0, 0);
-  for (size_t i = 0; i < F.rows(); i++) {
+  for (Eigen::Index i = 0; i < F.rows(); i++) {
     Eigen::RowVector3d a = V.row(F(i, 0));
     Eigen::RowVector3d b = V.row(F(i, 1));
     Eigen::RowVector3d c = V.row(F(i, 2));
@@ -436,7 +462,7 @@ void ComputeConnectivityFrom(const MeshDependentResource& mdr,
   std::priority_queue<VertexInfo> q;
 
   Eigen::RowVector3f effector_pos_f = from.transpose().cast<float>();
-  for (size_t i = 0; i < mdr.V.rows(); i++) {
+  for (Eigen::Index i = 0; i < mdr.V.rows(); i++) {
     Eigen::RowVector3d direction = mdr.V.row(i) - from.transpose();
     igl::Hit hit;
     direction -= direction.normalized() * 1e-7;
@@ -447,7 +473,7 @@ void ComputeConnectivityFrom(const MeshDependentResource& mdr,
       q.push(VertexInfo{(int)i, dist[i]});
     }
   }
-  for (size_t i = 0; i < mdr.F.rows(); i++) {
+  for (Eigen::Index i = 0; i < mdr.F.rows(); i++) {
     for (int iu = 0; iu < 3; iu++) {
       int u = mdr.F(i, iu);
       int v = mdr.F(i, (iu + 1) % 3);

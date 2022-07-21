@@ -1,3 +1,13 @@
+// The `MinNormVectorInFacet`, `WrenchInPositiveSpan`, CheckForceClosureQP`,
+// `CheckPartialClosureQP` and `ComputeMinWrenchQP` functions are adapted from
+// the Dex-Net package, which is licensed under:
+//   Copyright (c) 2017. The Regents of the University of California (Regents). All Rights Reserved.
+//   SPDX-License-Identifier: LicenseRef-UC-Berkeley-Copyright-and-Disclaimer-Notice
+//
+// Other parts are licensed under:
+//   Copyright (c) 2022 The University of Washington and Contributors
+//   SPDX-License-Identifier: LicenseRef-UW-Non-Commercial
+
 #include "QualityMetric.h"
 
 #include <CGAL/QP_functions.h>
@@ -89,8 +99,8 @@ static CGAL::Quotient<ET> WrenchInPositiveSpan(
   }
   */
 
-  for (size_t i = 0; i < D.cols(); i++) {
-    for (size_t j = 0; j <= i; j++) {
+  for (Eigen::Index i = 0; i < D.cols(); i++) {
+    for (Eigen::Index j = 0; j <= i; j++) {
       qp.set_d(i, j, D(i, j));
     }
     qp.set_c(i, c(i));
@@ -234,7 +244,7 @@ static real LossFn(const std::vector<Vector3real>& positions,
 bool CheckApproachDirection(const std::vector<ContactPoint>& contact_points,
                             Eigen::Affine3d& out_trans,
                             double max_angle,
-                            double lr,
+                            double step_size,
                             double threshold,
                             int max_iterations) {
   using autodiff::at;
@@ -262,7 +272,7 @@ bool CheckApproachDirection(const std::vector<ContactPoint>& contact_points,
                  wrt(trans, rot, center),
                  at(positions, normals, trans, rot, center, maxCos),
                  loss);
-    grad *= lr;
+    grad *= step_size;
 
     if (loss < threshold) {
       Eigen::Vector3d rotd = rot.cast<double>();

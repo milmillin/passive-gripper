@@ -53,7 +53,7 @@ void GenerateCPX(const psg::PassiveGripper& psg,
                  const std::string& cpx_fn) {
   auto start_time = std::chrono::high_resolution_clock::now();
   auto cps = psg::InitializeGCs(
-      psg, psg::kNSeeds, psg::kNCandidates);
+      psg, psg::kNCandidates, psg::kNSeeds);
   auto stop_time = std::chrono::high_resolution_clock::now();
   long long duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                            stop_time - start_time)

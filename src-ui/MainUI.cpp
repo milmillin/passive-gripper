@@ -291,8 +291,8 @@ void MainUI::DrawContactPointPanel() {
   }
   if (ImGui::CollapsingHeader("Candidates Generation",
                               ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::InputInt("# Candidates", (int*)&cp_num_candidates, kNCandidates);
-    ImGui::InputInt("# Seeds", (int*)&cp_num_seeds, kNSeeds);
+    ImGui::InputInt("# Candidates", (int*)&cp_num_candidates, 1000);
+    ImGui::InputInt("# Seeds", (int*)&cp_num_seeds, 1000);
     if (ImGui::Button("Generate Candidates", ImVec2(w, 0))) {
       auto start_time = std::chrono::high_resolution_clock::now();
       contact_point_candidates_ =
@@ -524,6 +524,10 @@ void MainUI::DrawOptimizationPanel() {
     ImGui::Checkbox("Debug", &optimizer_.debug);
     if (opt_update) vm_.PSG().SetOptSettings(opt_settings);
     if (cost_update) vm_.PSG().SetCostSettings(cost_settings);
+    if (ImGui::Button("Reset Default", ImVec2(w, 0))) {
+      vm_.PSG().SetOptSettings(OptSettings());
+      vm_.PSG().SetCostSettings(CostSettings());
+    }
     if (ImGui::Button("Optimize", ImVec2(w, 0))) {
       optimizer_.Optimize(vm_.PSG());
     }

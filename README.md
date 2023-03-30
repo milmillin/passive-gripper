@@ -24,7 +24,7 @@ vcpkg install cgal:x64-[windows|linux]
 vcpkg install nlopt:x64-[windows|linux]
 ```
 
-We use [ToPy](https://github.com/milmillin/topy) library for topology optimization.
+We use our fork of [ToPy](https://github.com/milmillin/topy) library for topology optimization.
 
 ### Compilation
 
@@ -161,7 +161,7 @@ You can click on the "Topo Opt" under the "Tools" pane.
 - (Required) Click on "Init Gripper Bound". This will appropriately finds the working area for the gripper shown in blue. You can manually adjust using the "Lower-" and "Upper bound" on the left.
 - (Required) Click on "Compute Neg Vol". This may take a while and the negative volume should appear.
 - (Required) Click on "Generate Topy Config". This will prompt you to save a `.tpd` file.
-- (Required) Refer to ToPy documentation on how to perform topology optimization.
+- (Required) Refer to ToPy documentation on how to perform topology optimization. You will need to run `python scripts/optimise.py whatever.tpd output-dir`.
 
 ### Loading Topology Optimization Result
 

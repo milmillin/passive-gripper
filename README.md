@@ -258,3 +258,21 @@ Here is a list of files that contains a license other than `LicenseRef-UW-Non-Co
 	* external/libigl/
 	* include/passive-gripper/GeometryUtils.cpp
 	* include/passive-gripper/GeometryUtils.h
+
+ ## Citation
+
+```
+@article{Kodnongbua_2022,
+	doi = {10.1145/3528223.3530162},
+	url = {https://doi.org/10.1145%2F3528223.3530162},
+	year = 2022,
+	month = {jul},
+	publisher = {Association for Computing Machinery ({ACM})},
+	volume = {41},
+	number = {4},
+	pages = {2--12},
+	author = {Milin Kodnongbua and Ian Good and Yu Lou and Jeffrey Lipton and Adriana Schulz},
+	title = {Computational design of passive grippers},
+	journal = {{ACM} Transactions on Graphics}
+}
+```
